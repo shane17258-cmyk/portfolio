@@ -1,0 +1,50 @@
+// Pre-populated transactions transcribed from the transaction statement
+const INITIAL_TRANSACTIONS = [
+  // Page 1
+  { date: "115/03/02", type: "buy", name: "元大台灣50", shares: 2000, price: 80.58, fee: 0, tax: 0, amount: 161160, net: 161160, dir: "收", ref: "p-005T-00" },
+  { date: "115/03/02", type: "buy", name: "元大台灣50", shares: 480, price: 80.58, fee: 1, tax: 0, amount: 38678, net: 38679, dir: "收", ref: "p-005U-00" },
+  { date: "115/03/02", type: "buy", name: "富邦台50", shares: 1000, price: 186.64, fee: 0, tax: 0, amount: 186640, net: 186640, dir: "收", ref: "p-008B-00" },
+  { date: "115/03/02", type: "buy", name: "富邦台50", shares: 70, price: 186.64, fee: 1, tax: 0, amount: 13064, net: 13065, dir: "收", ref: "p-008C-00" },
+  { date: "115/03/02", type: "buy", name: "元大S&P500", shares: 3000, price: 67.55, fee: 0, tax: 0, amount: 202650, net: 202650, dir: "收", ref: "p-008M-00" },
+  { date: "115/03/02", type: "buy", name: "元大S&P500", shares: 700, price: 67.55, fee: 1, tax: 0, amount: 47285, net: 47286, dir: "收", ref: "p-008N-00" },
+  { date: "115/03/04", type: "buy", name: "元大台灣50", shares: 2000, price: 75.60, fee: 60, tax: 0, amount: 151200, net: 151260, dir: "收", ref: "A-0410-00" },
+  { date: "115/03/04", type: "buy", name: "富邦台50", shares: 1000, price: 175.05, fee: 69, tax: 0, amount: 175050, net: 175119, dir: "收", ref: "I-1809-00" },
+  { date: "115/03/05", type: "buy", name: "元大台灣50", shares: 2000, price: 77.53, fee: 0, tax: 0, amount: 155060, net: 155060, dir: "收", ref: "p-002o-00" },
+  { date: "115/03/05", type: "buy", name: "元大台灣50", shares: 579, price: 77.53, fee: 1, tax: 0, amount: 44889, net: 44890, dir: "收", ref: "p-002p-00" },
+  { date: "115/03/05", type: "buy", name: "富邦台50", shares: 1000, price: 179.88, fee: 0, tax: 0, amount: 179880, net: 179880, dir: "收", ref: "p-0044-00" },
+  { date: "115/03/05", type: "buy", name: "富邦台50", shares: 111, price: 179.88, fee: 1, tax: 0, amount: 19966, net: 19967, dir: "收", ref: "p-0045-00" },
+  { date: "115/03/05", type: "buy", name: "元大S&P500", shares: 3000, price: 68.27, fee: 0, tax: 0, amount: 204810, net: 204810, dir: "收", ref: "p-004C-00" },
+  { date: "115/03/05", type: "buy", name: "元大S&P500", shares: 661, price: 68.27, fee: 1, tax: 0, amount: 45126, net: 45127, dir: "收", ref: "p-004D-00" },
+  { date: "115/03/11", type: "buy", name: "富邦台50", shares: 7000, price: 181.50, fee: 506, tax: 0, amount: 1270500, net: 1271006, dir: "收", ref: "I-0881-00" },
+  { date: "115/03/11", type: "buy", name: "元大台灣50", shares: 16000, price: 78.45, fee: 500, tax: 0, amount: 1255200, net: 1255700, dir: "收", ref: "I-0882-00" },
+  { date: "115/03/11", type: "buy", name: "元大S&P500", shares: 25000, price: 67.95, fee: 677, tax: 0, amount: 1698750, net: 1699427, dir: "收", ref: "I-0883-00" },
+  { date: "115/03/11", type: "buy", name: "元大台灣50", shares: 2000, price: 77.65, fee: 0, tax: 0, amount: 155300, net: 155300, dir: "收", ref: "p-001A-00" },
+  { date: "115/03/11", type: "buy", name: "元大台灣50", shares: 574, price: 77.65, fee: 1, tax: 0, amount: 44571, net: 44572, dir: "收", ref: "p-001B-00" },
+  { date: "115/03/11", type: "buy", name: "富邦台50", shares: 1000, price: 179.98, fee: 0, tax: 0, amount: 179980, net: 179980, dir: "收", ref: "p-001y-00" },
+
+  // Page 2
+  { date: "115/03/11", type: "buy", name: "富邦台50", shares: 110, price: 179.98, fee: 1, tax: 0, amount: 19797, net: 19798, dir: "收", ref: "p-001z-00" },
+  { date: "115/03/11", type: "buy", name: "元大S&P500", shares: 3000, price: 68.00, fee: 0, tax: 0, amount: 204000, net: 204000, dir: "收", ref: "p-0026-00" },
+  { date: "115/03/11", type: "buy", name: "元大S&P500", shares: 675, price: 68.00, fee: 1, tax: 0, amount: 45900, net: 45901, dir: "收", ref: "p-0027-00" },
+  { date: "115/04/20", type: "buy", name: "元大S&P500", shares: 7000, price: 70.15, fee: 174, tax: 0, amount: 491050, net: 491224, dir: "收", ref: "I-0789-00" },
+  { date: "115/04/20", type: "buy", name: "富邦NASDAQ", shares: 9000, price: 107.60, fee: 344, tax: 0, amount: 968400, net: 968744, dir: "收", ref: "I-0794-00" },
+  { date: "115/04/29", type: "sell", name: "元大台灣50", shares: 15000, price: 90.75, fee: 484, tax: 1361, amount: 1361250, net: 1359405, dir: "付", ref: "I-1690-00" },
+  { date: "115/04/29", type: "sell", name: "富邦台50", shares: 2000, price: 210.45, fee: 149, tax: 420, amount: 420900, net: 420331, dir: "付", ref: "I-1691-00" },
+  { date: "115/04/29", type: "sell", name: "元大S&P500", shares: 4000, price: 70.90, fee: 101, tax: 283, amount: 283600, net: 283216, dir: "付", ref: "I-1692-00" },
+  { date: "115/04/29", type: "sell", name: "富邦NASDAQ", shares: 5000, price: 109.95, fee: 195, tax: 549, amount: 549750, net: 549006, dir: "付", ref: "I-1693-00" },
+  { date: "115/05/04", type: "buy", name: "元大台灣50", shares: 53, price: 94.01, fee: 1, tax: 0, amount: 4982, net: 4983, dir: "收", ref: "p-0067-00" },
+  { date: "115/05/04", type: "buy", name: "富邦台50", shares: 22, price: 217.79, fee: 1, tax: 0, amount: 4791, net: 4792, dir: "收", ref: "p-00Ar-00" },
+  { date: "115/05/04", type: "buy", name: "元大S&P500", shares: 69, price: 71.95, fee: 1, tax: 0, amount: 4964, net: 4965, dir: "收", ref: "p-00BF-00" },
+  { date: "115/05/04", type: "buy", name: "富邦NASDAQ", shares: 44, price: 112.99, fee: 1, tax: 0, amount: 4971, net: 4972, dir: "收", ref: "p-00Bh-00" },
+  { date: "115/05/07", type: "buy", name: "元大S&P500", shares: 13000, price: 72.75, fee: 336, tax: 0, amount: 945750, net: 946086, dir: "收", ref: "I-1049-00" },
+  { date: "115/05/07", type: "buy", name: "富邦NASDAQ", shares: 10000, price: 115.30, fee: 410, tax: 0, amount: 1153000, net: 1153410, dir: "收", ref: "I-1053-00" },
+  { date: "115/05/21", type: "buy", name: "元大台灣50", shares: 14000, price: 94.90, fee: 473, tax: 0, amount: 1328600, net: 1329073, dir: "收", ref: "A-0044-00" },
+  { date: "115/05/21", type: "buy", name: "富邦台50", shares: 1000, price: 219.50, fee: 78, tax: 0, amount: 219500, net: 219578, dir: "收", ref: "A-0045-00" },
+  { date: "115/05/21", type: "buy", name: "富邦台50", shares: 2000, price: 219.80, fee: 156, tax: 0, amount: 439600, net: 439756, dir: "收", ref: "A-0045-01" },
+  { date: "115/06/05", type: "buy", name: "元大台灣50", shares: 47, price: 104.49, fee: 1, tax: 0, amount: 4911, net: 4912, dir: "收", ref: "p-003U-00" },
+  { date: "115/06/05", type: "buy", name: "富邦台50", shares: 20, price: 241.88, fee: 1, tax: 0, amount: 4837, net: 4838, dir: "收", ref: "p-006g-00" },
+
+  // Page 3
+  { date: "115/06/05", type: "buy", name: "元大S&P500", shares: 66, price: 74.73, fee: 1, tax: 0, amount: 4932, net: 4933, dir: "收", ref: "p-006t-00" },
+  { date: "115/06/05", type: "buy", name: "富邦NASDAQ", shares: 40, price: 121.99, fee: 1, tax: 0, amount: 4879, ref: "p-0077-00", net: 4880, dir: "收" }
+];

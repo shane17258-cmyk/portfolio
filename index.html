@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>賴煜耀 - 證券資產配置與投資收益分析系統</title>
+  <!-- Google Font & Style sheets -->
+  <link rel="stylesheet" href="styles.css">
+  <!-- Chart.js from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- Top Header -->
+    <header>
+      <div class="logo-section">
+        <h1>📊 GlintPortfolio <span style="font-size: 14px; font-weight: 400; padding: 2px 8px; border-radius: 20px; background: rgba(79, 70, 229, 0.2); color: var(--primary-light); vertical-align: middle;">賴煜耀 個人版</span></h1>
+        <p>追蹤股數、平均買進價位，並對比即時現價計算未實現與已實現之淨收益</p>
+      </div>
+      <!-- Live Price Status Badge -->
+      <div id="live-price-status" style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">
+        <span id="live-price-indicator" style="font-size: 14px;">🔄</span>
+        <div>
+          <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">即時行情</div>
+          <div id="live-price-label" style="font-size: 12px; font-weight: 600; color: #f59e0b;">更新中…</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="fetchLivePrices()" title="立即重新抓取現價" style="margin-left: 4px;">
+          ↻ 立即更新
+        </button>
+      </div>
+
+      <div class="header-actions">
+        <button class="btn btn-primary" onclick="openAddTransactionModal()">
+          <span style="font-size: 16px; font-weight: bold;">+</span> 新增交易
+        </button>
+        <button class="btn btn-secondary" onclick="exportData()">
+          📥 導出備份
+        </button>
+        <label for="file-import" class="btn btn-secondary" style="cursor: pointer; display: inline-flex; align-items: center;">
+          📤 匯入備份
+        </label>
+        <input type="file" id="file-import" accept=".json" style="display: none;">
+        <button class="btn btn-danger" onclick="resetToDefaults()">
+          🔄 重置為對帳單
+        </button>
+      </div>
+    </header>
+
+    <!-- Top Summary Cards -->
+    <div class="summary-grid">
+      <!-- Total Value -->
+      <div class="card card-value">
+        <div class="card-label">
+          <span>當前總市值</span>
+          <i>💰</i>
+        </div>
+        <div class="card-value-display" id="total-value">NT$ 0</div>
+        <div class="card-trend" style="background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); font-weight: normal;">
+          庫存標的之當前市場總估值
+        </div>
+      </div>
+
+      <!-- Total Cost -->
+      <div class="card card-invested">
+        <div class="card-label">
+          <span>持有總成本</span>
+          <i>💳</i>
+        </div>
+        <div class="card-value-display" id="total-invested">NT$ 0</div>
+        <div class="card-trend" style="background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); font-weight: normal;">
+          現有庫存持股之加權平均總買入成本
+        </div>
+      </div>
+
+      <!-- Net Profit/Loss -->
+      <div class="card card-pnl" id="pnl-card">
+        <div class="card-label">
+          <span>投資淨收益</span>
+          <i>📈</i>
+        </div>
+        <div class="card-value-display text-profit" id="total-pnl">+$0</div>
+        <div class="card-trend bg-profit" id="total-pnl-percent">▲ 0.00% (帳面獲利比)</div>
+        <div style="display: flex; justify-content: space-between; font-size: 11px; margin-top: 10px; color: var(--text-secondary); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px;">
+          <span id="unrealized-pnl-breakdown">未實現: $0</span>
+          <span id="realized-pnl-breakdown">已實現: $0</span>
+        </div>
+      </div>
+
+      <!-- Leverage Ratio Card -->
+      <div class="card card-leverage" id="leverage-card">
+        <div class="card-label">
+          <span>投資槓桿倍率</span>
+          <i>⚖️</i>
+        </div>
+        <div class="card-value-display text-profit" id="leverage-ratio">1.00x</div>
+        <div class="card-trend bg-profit" id="leverage-subtext">實際本金: NT$ 0</div>
+        <div style="display: flex; justify-content: space-between; font-size: 11px; margin-top: 10px; color: var(--text-secondary); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px;">
+          <span id="loan-balance-display">信貸餘額: $0</span>
+          <span>按月2日遞減2.2萬</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Layout Grid -->
+    <div class="main-layout">
+      
+      <!-- Left Column: Holdings & Charts -->
+      <div style="display: flex; flex-direction: column; gap: 24px;">
+        
+        <!-- Asset Allocation Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+          
+          <!-- Allocation Chart Card -->
+          <div class="card allocation-card">
+            <h3 class="section-title">📊 當前資產配置比例</h3>
+            <div class="chart-wrapper">
+              <canvas id="allocationChart"></canvas>
+              <div id="chart-no-data" class="no-data-msg" style="display: none;">沒有持股數據可顯示圖表</div>
+            </div>
+          </div>
+
+          <!-- Cost vs Market Value Chart Card -->
+          <div class="card allocation-card">
+            <h3 class="section-title">⚖️ 成本與市值對比</h3>
+            <div class="chart-wrapper">
+              <canvas id="pnlChart"></canvas>
+              <div id="pnl-chart-no-data" class="no-data-msg" style="display: none;">沒有持股數據可顯示圖表</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Holdings Details Card -->
+        <div class="card">
+          <div class="section-title-bar">
+            <h3 class="section-title">💼 標的持股庫存明細</h3>
+            <span style="font-size: 12px; color: var(--text-muted);">* 均價採移動加權平均法計算，已包含手續費</span>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>股票名稱</th>
+                  <th>持股庫存</th>
+                  <th>加權均價</th>
+                  <th>當前現價 (可點擊編輯)</th>
+                  <th>當前市值</th>
+                  <th>未實現損益 (ROI)</th>
+                  <th>已實現損益</th>
+                  <th>帳面淨收益</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="holdings-table-body">
+                <!-- Javascript will populate this -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Current Price Updater & Loan Panels -->
+      <div style="display: flex; flex-direction: column; gap: 24px;">
+        <!-- Price Card -->
+        <div class="card">
+          <h3 class="section-title" style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">✏️ 標的現價快速更新</h3>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">在此更新當前股價，系統將自動比對庫存，即時動態計算最新的帳面未實現淨收益。</p>
+          <div id="price-inputs-container" class="price-inputs">
+            <!-- Javascript will populate this -->
+          </div>
+        </div>
+
+        <!-- Loan and Leverage Settings Card -->
+        <div class="card">
+          <h3 class="section-title" style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">⚖️ 信用貸款與槓桿設定</h3>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">系統會自動根據起始日期與目前日期，按月扣除信貸本金以計算目前的自備本金與實際槓桿。</p>
+          
+          <div class="price-inputs" style="margin-top: 15px;">
+            <div class="form-group">
+              <label class="form-label" for="loan-base-amount">信貸起始餘額 (基期)</label>
+              <input type="number" id="loan-base-amount" class="form-control" value="1597333" onchange="updateLoanConfig('baseAmount', this.value)">
+            </div>
+            
+            <div class="form-row-2">
+              <div class="form-group">
+                <label class="form-label" for="loan-base-date">起始扣款日期</label>
+                <input type="date" id="loan-base-date" class="form-control" value="2026-06-02" onchange="updateLoanConfig('baseDate', this.value)">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="loan-deduction">每月扣除金額</label>
+                <input type="number" id="loan-deduction" class="form-control" value="22000" onchange="updateLoanConfig('monthlyDeduction', this.value)">
+              </div>
+            </div>
+            
+            <div style="margin-top: 10px; padding: 12px; background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--border-color); border-radius: var(--radius-md); font-size: 12px;">
+              <div class="calc-preview-row">
+                <span>計算後今日信貸餘額:</span>
+                <span id="loan-calc-balance" style="font-weight: 600; color: var(--secondary);">NT$ 0</span>
+              </div>
+              <div class="calc-preview-row">
+                <span>已扣款期數:</span>
+                <span id="loan-calc-months">0 期</span>
+              </div>
+              <div class="calc-preview-row">
+                <span>實際自備本金:</span>
+                <span id="loan-calc-capital" style="font-weight: 600;">NT$ 0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Section: Transactions History Log -->
+    <div class="history-section">
+      <div class="section-title-bar">
+        <h3 class="section-title">📜 歷史交易明細對帳單</h3>
+        <span style="font-size: 12px; color: var(--text-muted);" id="tx-count-display">共計 42 筆對帳紀錄</span>
+      </div>
+
+      <!-- Filters & Search Bar -->
+      <div class="filter-bar">
+        <div class="search-input-wrapper">
+          <input type="text" id="search-tx" class="search-input" placeholder="搜尋日期、名稱、委託書號...">
+          <span class="search-icon">🔍</span>
+        </div>
+        <select id="filter-stock" class="select-filter">
+          <option value="">所有標的</option>
+        </select>
+        <select id="filter-type" class="select-filter">
+          <option value="">所有種類</option>
+          <option value="buy">買進 (CD:集買)</option>
+          <option value="sell">賣出 (CD:集賣)</option>
+        </select>
+      </div>
+
+      <!-- Transactions Table -->
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>交易日期</th>
+              <th>種類</th>
+              <th>股票名稱</th>
+              <th>交易股數</th>
+              <th>成交單價</th>
+              <th>手續費</th>
+              <th>交易稅</th>
+              <th>淨收付金額</th>
+              <th>管理</th>
+            </tr>
+          </thead>
+          <tbody id="transactions-table-body">
+            <!-- Javascript will populate this -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Add / Edit Transaction Modal -->
+  <div class="modal-overlay" id="tx-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-title">新增交易紀錄</h3>
+        <button class="modal-close-btn" onclick="closeTxModal()">✕</button>
+      </div>
+      <form id="transaction-form">
+        <div class="modal-body">
+          <!-- Date & Type -->
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label" for="tx-date">交易日期 (國曆/民國格式)</label>
+              <input type="text" id="tx-date" class="form-control" placeholder="如: 115/03/02" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="tx-type">交易種類</label>
+              <select id="tx-type" class="form-control" required>
+                <option value="buy">買進 (集買)</option>
+                <option value="sell">賣出 (集賣)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Stock Name -->
+          <div class="form-group">
+            <label class="form-label" for="tx-name">股票名稱</label>
+            <input type="text" id="tx-name" class="form-control" placeholder="例如：元大台灣50" required list="stock-datalist">
+            <datalist id="stock-datalist">
+              <option value="元大台灣50"></option>
+              <option value="富邦台50"></option>
+              <option value="元大S&P500"></option>
+              <option value="富邦NASDAQ"></option>
+            </datalist>
+          </div>
+
+          <!-- Shares & Price -->
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label" for="tx-shares">股數</label>
+              <input type="number" id="tx-shares" class="form-control" placeholder="1000" min="1" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="tx-price">單價</label>
+              <input type="number" id="tx-price" class="form-control" placeholder="85.5" step="0.01" min="0.01" required>
+            </div>
+          </div>
+
+          <!-- Fee & Tax -->
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label" for="tx-fee">手續費</label>
+              <input type="number" id="tx-fee" class="form-control" placeholder="0" min="0" value="0">
+              <span class="form-helper-text">預設自動按2.8折計算</span>
+            </div>
+            <div class="form-group" id="tax-form-group">
+              <label class="form-label" for="tx-tax" id="preview-label-tax">交易稅</label>
+              <input type="number" id="tx-tax" class="form-control" placeholder="0" min="0" value="0">
+              <span class="form-helper-text">買入不收；賣出ETF為0.1%</span>
+            </div>
+          </div>
+
+          <!-- Interactive Calculation Preview -->
+          <div class="calc-preview">
+            <div class="calc-preview-row">
+              <span>成交價金:</span>
+              <span id="preview-amount">NT$ 0</span>
+            </div>
+            <div class="calc-preview-row">
+              <span>手續費:</span>
+              <span id="preview-fee">NT$ 0</span>
+            </div>
+            <div class="calc-preview-row" id="preview-tax-row" style="display: none;">
+              <span>交易稅:</span>
+              <span id="preview-tax">NT$ 0</span>
+            </div>
+            <div class="calc-preview-row">
+              <span>預估淨收付額:</span>
+              <span id="preview-net" style="color: var(--secondary); font-weight: bold;">NT$ 0</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeTxModal()">取消</button>
+          <button type="submit" class="btn btn-primary">保存紀錄</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Area -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Import application script files -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>
