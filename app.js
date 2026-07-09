@@ -32,6 +32,19 @@ const STOCK_TWSE_MAP = {
   "富邦NASDAQ": "tse_00662.tw"
 };
 
+// Short ticker symbols for display
+const STOCK_CODES = {
+  "元大台灣50": "0050",
+  "富邦台50": "006208",
+  "元大S&P500": "00646",
+  "富邦NASDAQ": "00662"
+};
+
+function getStockDisplayName(name) {
+  const code = STOCK_CODES[name];
+  return code ? `${name} (${code})` : name;
+}
+
 
 // Initialize Application
 document.addEventListener("DOMContentLoaded", () => {
@@ -151,12 +164,14 @@ function calculatePortfolio() {
       stockHoldings[name] = {
         name: name,
         shares: 0,
-        totalCost: 0, // Cost basis of current holdings
+        totalCost: 0,
         realizedPnL: 0,
         totalBoughtShares: 0,
         totalBoughtAmount: 0,
         totalSoldShares: 0,
-        totalSoldAmount: 0
+        totalSoldAmount: 0,
+        wholeLotShares: 0,
+        wholeLotCost: 0
       };
     }
 
@@ -164,13 +179,15 @@ function calculatePortfolio() {
     const rawAmount = t.shares * t.price;
     
     if (t.type === "buy") {
-      // For buys: Net Payment = Amount + Fee.
-      // We use t.net if available, otherwise calculate it
       const netCost = t.net || (rawAmount + t.fee);
       h.shares += t.shares;
       h.totalCost += netCost;
       h.totalBoughtShares += t.shares;
       h.totalBoughtAmount += netCost;
+      if (t.shares >= 1000) {
+        h.wholeLotShares += t.shares;
+        h.wholeLotCost += netCost;
+      }
     } else if (t.type === "sell") {
       // For sells: Net Payment = Amount - Fee - Tax
       const netRevenue = t.net || (rawAmount - t.fee - t.tax);
@@ -188,7 +205,15 @@ function calculatePortfolio() {
       h.totalSoldShares += soldShares;
       h.totalSoldAmount += netRevenue;
 
-      // Handle float rounding issues
+      // Reduce whole-lot shares proportionally
+      if (h.wholeLotShares > 0) {
+        const wlAvgCost = h.wholeLotCost / h.wholeLotShares;
+        const soldWl = Math.min(t.shares, h.wholeLotShares);
+        h.wholeLotCost -= wlAvgCost * soldWl;
+        h.wholeLotShares -= soldWl;
+        if (h.wholeLotShares < 0) { h.wholeLotShares = 0; h.wholeLotCost = 0; }
+      }
+
       if (h.shares <= 0) {
         h.shares = 0;
         h.totalCost = 0;
@@ -213,11 +238,13 @@ function calculatePortfolio() {
       totalInvested += h.totalCost;
       totalValue += h.marketValue;
       totalUnrealizedPnL += h.unrealizedPnL;
+      h.wholeLotAvgPrice = h.wholeLotShares > 0 ? h.wholeLotCost / h.wholeLotShares : 0;
     } else {
       h.currentPrice = prices[name] || 0;
       h.marketValue = 0;
       h.unrealizedPnL = 0;
       h.avgPrice = 0;
+      h.wholeLotAvgPrice = 0;
     }
     totalRealizedPnL += h.realizedPnL;
   });
@@ -303,24 +330,26 @@ function renderHoldingsTable() {
   const activeHoldings = Object.values(stockHoldings).filter(h => h.shares > 0 || h.realizedPnL !== 0);
 
   if (activeHoldings.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" class="no-data-msg">暫無持股資料</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="no-data-msg">暫無持股資料</td></tr>`;
     return;
   }
 
   activeHoldings.forEach(h => {
     const roi = h.totalCost > 0 ? (h.unrealizedPnL / h.totalCost) * 100 : 0;
     const netProfit = h.unrealizedPnL + h.realizedPnL;
+    const wlAvgPrice = h.wholeLotAvgPrice || 0;
     
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>
         <div class="stock-badge">
           <span style="width: 8px; height: 8px; border-radius: 50%; background: ${getStockColor(h.name)}"></span>
-          ${h.name}
+          ${getStockDisplayName(h.name)}
         </div>
       </td>
       <td>${formatNumber(h.shares)} 股</td>
       <td>$${formatDecimal(h.avgPrice, 2)}</td>
+      <td>${h.wholeLotShares > 0 ? `$${formatDecimal(wlAvgPrice, 2)}` : '-'}</td>
       <td>
         <span class="price-click-edit" onclick="focusPriceInput('${h.name}')">$${formatDecimal(h.currentPrice, 2)}</span>
       </td>
@@ -356,6 +385,7 @@ function renderHoldingsTable() {
     <td>-</td>
     <td>-</td>
     <td>-</td>
+    <td>-</td>
     <td>$${formatNumber(Math.round(portfolioSummary.totalValue))}</td>
     <td class="${portfolioSummary.totalUnrealizedPnL >= 0 ? 'text-profit' : 'text-loss'}">
       ${formatCurrencyWithSign(portfolioSummary.totalUnrealizedPnL)}
@@ -387,7 +417,7 @@ function renderPriceInputs() {
     row.className = "price-input-row";
     row.innerHTML = `
       <div class="price-stock-info">
-        <span class="price-stock-name">${name}</span>
+        <span class="price-stock-name">${getStockDisplayName(name)}</span>
         <span class="price-stock-shares">庫存: ${formatNumber(h.shares || 0)} 股</span>
       </div>
       <div class="price-input-wrapper">
@@ -491,7 +521,7 @@ function renderTransactionsTable() {
           ${t.type === 'buy' ? '買進' : '賣出'}
         </span>
       </td>
-      <td style="font-weight: 600;">${t.name}</td>
+      <td style="font-weight: 600;">${getStockDisplayName(t.name)}</td>
       <td>${formatNumber(t.shares)} 股</td>
       <td>$${formatDecimal(t.price, 2)}</td>
       <td>$${formatNumber(t.fee)}</td>
@@ -522,7 +552,7 @@ function populateFilterSelect() {
   uniqueStocks.forEach(name => {
     const opt = document.createElement("option");
     opt.value = name;
-    opt.textContent = name;
+    opt.textContent = getStockDisplayName(name);
     if (name === currentVal) {
       opt.selected = true;
     }
@@ -541,7 +571,7 @@ function renderCharts() {
   
   Object.values(stockHoldings).forEach(h => {
     if (h.shares > 0) {
-      labels.push(h.name);
+      labels.push(getStockDisplayName(h.name));
       values.push(Math.round(h.marketValue));
       backgroundColors.push(getStockColor(h.name));
     }
@@ -608,7 +638,7 @@ function renderCharts() {
 
   Object.values(stockHoldings).forEach(h => {
     if (h.shares > 0) {
-      barLabels.push(h.name);
+      barLabels.push(getStockDisplayName(h.name));
       costValues.push(Math.round(h.totalCost));
       marketValues.push(Math.round(h.marketValue));
     }
