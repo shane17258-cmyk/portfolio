@@ -54,16 +54,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Load data from LocalStorage or fall back to defaults
 function loadData() {
+  const savedVersion = localStorage.getItem("portfolio_data_version");
   const savedTransactions = localStorage.getItem("portfolio_transactions");
   const savedPrices = localStorage.getItem("portfolio_prices");
   const savedLoanConfig = localStorage.getItem("portfolio_loan_config");
 
+  // DATA_VERSION comes from data.js; if it changed (新交易加入), reload defaults
+  if (savedVersion !== String(DATA_VERSION) || !savedTransactions) {
+    transactions = [...INITIAL_TRANSACTIONS];
+    prices = { ...DEFAULT_PRICES };
+    loanConfig = {
+      baseAmount: 1597333,
+      baseDate: "2026-06-02",
+      monthlyDeduction: 22000,
+      deductionDay: 2
+    };
+    saveTransactionsToLocalStorage();
+    savePricesToLocalStorage();
+    saveLoanConfigToLocalStorage();
+    localStorage.setItem("portfolio_data_version", String(DATA_VERSION));
+    return;
+  }
+
   if (savedTransactions) {
     transactions = JSON.parse(savedTransactions);
+  }
+  if (savedPrices) {
+    prices = JSON.parse(savedPrices);
   } else {
-    // INITIAL_TRANSACTIONS comes from data.js
-    transactions = [...INITIAL_TRANSACTIONS];
-    saveTransactionsToLocalStorage();
+    prices = { ...DEFAULT_PRICES };
+    savePricesToLocalStorage();
+  }
+  if (savedLoanConfig) {
+    loanConfig = JSON.parse(savedLoanConfig);
   }
 
   if (savedPrices) {
@@ -941,6 +964,7 @@ function resetToDefaults() {
     saveTransactionsToLocalStorage();
     savePricesToLocalStorage();
     saveLoanConfigToLocalStorage();
+    localStorage.setItem("portfolio_data_version", String(DATA_VERSION));
     renderApp();
     showToast("已重設為原始對帳單明細！", "success");
   }

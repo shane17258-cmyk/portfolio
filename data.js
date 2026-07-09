@@ -1,4 +1,5 @@
 // Pre-populated transactions transcribed from the transaction statement
+const DATA_VERSION = 2; // 遞增此版本號會觸發重新載入預設交易
 const INITIAL_TRANSACTIONS = [
   // Page 1
   { date: "115/03/02", type: "buy", name: "元大台灣50", shares: 2000, price: 80.58, fee: 0, tax: 0, amount: 161160, net: 161160, dir: "收", ref: "p-005T-00" },
