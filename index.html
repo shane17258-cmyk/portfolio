@@ -3,11 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>賴煜耀 - 證券資產配置與投資收益分析系統</title>
   <!-- Google Font & Style sheets -->
-  <link rel="stylesheet" href="styles.css">
-  <!-- Chart.js from CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // Auto cache busting: force fresh CSS/JS on every page load
+    var _cb = Date.now();
+    document.write('<link rel="stylesheet" href="styles.css?v=' + _cb + '">');
+  </script>
 </head>
 <body>
 
@@ -357,9 +363,12 @@
   <!-- Toast Notification Area -->
   <div id="toast-container" class="toast-container"></div>
 
-  <!-- Import application script files -->
-  <script src="data.js"></script>
-  <script src="app.js"></script>
+  <!-- Import application script files (cache-busted) -->
+  <script>
+    var _cb = Date.now();
+    document.write('<script src="data.js?v=' + _cb + '"><\/script>');
+    document.write('<script src="app.js?v=' + _cb + '"><\/script>');
+  </script>
 
 </body>
 </html>
