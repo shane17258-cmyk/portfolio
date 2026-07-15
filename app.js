@@ -852,7 +852,7 @@ function renderHistoricalValueChart() {
           pointRadius: 3,
           borderWidth: 2,
           fill: false,
-          tension: 0
+          tension: 0.35
         },
         {
           label: '估計市值',
@@ -863,7 +863,7 @@ function renderHistoricalValueChart() {
           pointRadius: 3,
           borderWidth: 2,
           fill: false,
-          tension: 0
+          tension: 0.35
         }
       ]
     },
