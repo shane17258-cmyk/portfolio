@@ -18,6 +18,7 @@ const DEFAULT_PRICES = {
 // Chart instances
 let allocationChart = null;
 let pnlChart = null;
+let historicalValueChart = null;
 
 // Live price fetch state
 let priceAutoRefreshTimer = null;
@@ -699,6 +700,213 @@ function renderCharts() {
       }
     });
   }
+
+  // 3. Historical Portfolio Value Line Chart
+  renderHistoricalValueChart();
+}
+
+// ─── Historical Portfolio Value Chart ─────────────────────────────────────
+
+function parseMinguoDate(dStr) {
+  const parts = dStr.split('/');
+  const year = parseInt(parts[0]) + 1911;
+  const month = parseInt(parts[1]) - 1;
+  const day = parseInt(parts[2]);
+  return new Date(year, month, day).getTime();
+}
+
+function formatMinguoDate(ts) {
+  const d = new Date(ts);
+  const y = d.getFullYear() - 1911;
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}/${m}/${day}`;
+}
+
+function calculateHistoricalValueData() {
+  const sorted = [...transactions].sort((a, b) => {
+    const tA = parseMinguoDate(a.date);
+    const tB = parseMinguoDate(b.date);
+    if (tA !== tB) return tA - tB;
+    return transactions.indexOf(a) - transactions.indexOf(b);
+  });
+
+  // Group transactions by date
+  const dateGroups = {};
+  sorted.forEach(t => {
+    if (!dateGroups[t.date]) dateGroups[t.date] = [];
+    dateGroups[t.date].push(t);
+  });
+
+  const dates = Object.keys(dateGroups).sort((a, b) => parseMinguoDate(a) - parseMinguoDate(b));
+  if (dates.length === 0) return null;
+
+  const dataPoints = [];
+  let hold = {};       // stockName -> { shares, totalCost }
+  let lastPrice = {};  // stockName -> last known price
+
+  dates.forEach(date => {
+    const dayTxs = dateGroups[date];
+
+    dayTxs.forEach(t => {
+      if (!hold[t.name]) hold[t.name] = { shares: 0, totalCost: 0 };
+      const h = hold[t.name];
+      const rawAmt = t.shares * t.price;
+
+      if (t.type === 'buy') {
+        const netCost = t.net || (rawAmt + t.fee);
+        h.shares += t.shares;
+        h.totalCost += netCost;
+      } else {
+        const netRev = t.net || (rawAmt - t.fee - t.tax);
+        const avgCost = h.shares > 0 ? h.totalCost / h.shares : 0;
+        h.totalCost -= avgCost * t.shares;
+        h.shares -= t.shares;
+        if (h.shares <= 0) { h.shares = 0; h.totalCost = 0; }
+      }
+
+      lastPrice[t.name] = t.price;
+    });
+
+    // Compute portfolio value after this date's transactions
+    let totalCost = 0;
+    let totalValue = 0;
+    Object.keys(hold).forEach(name => {
+      const h = hold[name];
+      if (h.shares > 0) {
+        totalCost += h.totalCost;
+        totalValue += h.shares * (lastPrice[name] || 0);
+      }
+    });
+
+    const dateTs = parseMinguoDate(date);
+    dataPoints.push({
+      dateTs,
+      dateLabel: date,
+      totalCost: Math.round(totalCost),
+      totalValue: Math.round(totalValue)
+    });
+  });
+
+  // Append current portfolio value using latest prices
+  const now = new Date();
+  const todayTs = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayLabel = formatMinguoDate(todayTs);
+
+  // Skip if today already exists
+  const lastPt = dataPoints[dataPoints.length - 1];
+  if (!lastPt || lastPt.dateLabel !== todayLabel) {
+    let currentTotalCost = 0;
+    let currentTotalValue = 0;
+    Object.values(stockHoldings).forEach(h => {
+      if (h.shares > 0) {
+        currentTotalCost += h.totalCost;
+        currentTotalValue += h.marketValue;
+      }
+    });
+    dataPoints.push({
+      dateTs: todayTs,
+      dateLabel: todayLabel,
+      totalCost: Math.round(currentTotalCost),
+      totalValue: Math.round(currentTotalValue)
+    });
+  }
+
+  return dataPoints;
+}
+
+function renderHistoricalValueChart() {
+  const canvas = document.getElementById('historicalValueChart');
+  const noDataEl = document.getElementById('hist-chart-no-data');
+  if (!canvas) return;
+
+  const data = calculateHistoricalValueData();
+
+  if (!data || data.length < 2) {
+    canvas.style.display = 'none';
+    if (noDataEl) noDataEl.style.display = 'block';
+    return;
+  }
+
+  canvas.style.display = 'block';
+  if (noDataEl) noDataEl.style.display = 'none';
+
+  if (historicalValueChart) historicalValueChart.destroy();
+
+  const ctx = canvas.getContext('2d');
+  const labels = data.map(d => d.dateLabel);
+  const costData = data.map(d => d.totalCost);
+  const valueData = data.map(d => d.totalValue);
+
+  historicalValueChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: '投入成本',
+          data: costData,
+          borderColor: '#4f46e5',
+          backgroundColor: 'rgba(79, 70, 229, 0.1)',
+          pointBackgroundColor: '#4f46e5',
+          pointRadius: 3,
+          borderWidth: 2,
+          fill: false,
+          tension: 0
+        },
+        {
+          label: '估計市值',
+          data: valueData,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          pointBackgroundColor: '#10b981',
+          pointRadius: 3,
+          borderWidth: 2,
+          fill: false,
+          tension: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        intersect: false,
+        mode: 'index'
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: '#94a3b8',
+            maxTicksLimit: 12,
+            maxRotation: 45
+          },
+          grid: { display: false }
+        },
+        y: {
+          ticks: {
+            color: '#94a3b8',
+            callback: value => `$${formatNumber(value)}`
+          },
+          grid: { color: 'rgba(255,255,255,0.05)' }
+        }
+      },
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { color: '#94a3b8' }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              const val = ctx.raw;
+              return ` ${ctx.dataset.label}: NT$${formatNumber(val)}`;
+            }
+          }
+        }
+      }
+    }
+  });
 }
 
 // Helpers for Colors
