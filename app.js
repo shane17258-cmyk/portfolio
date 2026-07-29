@@ -1258,6 +1258,25 @@ function renderLoanInputs() {
   if (calcBalanceEl) calcBalanceEl.innerText = formatCurrency(loanInfo.currentBalance);
   if (calcMonthsEl) calcMonthsEl.innerText = `${loanInfo.monthsPassed} 期 (累計扣除 ${formatCurrency(loanInfo.totalDeducted)})`;
   if (calcCapitalEl) calcCapitalEl.innerText = formatCurrency(actualCapital);
+
+  // Maintenance rate: fixed position quantities × current prices / 4M
+  const fixedPositions = [
+    { name: "元大台灣50",  lots: 24 },
+    { name: "富邦NASDAQ",  lots: 14 },
+    { name: "元大S&P500",  lots: 52 },
+    { name: "富邦台50",    lots: 12 }
+  ];
+  const totalValue = fixedPositions.reduce((sum, p) => {
+    return sum + p.lots * 1000 * (prices[p.name] || 0);
+  }, 0);
+  const maintenanceRatio = totalValue / 4000000;
+
+  const rateEl = document.getElementById("maintenance-rate");
+  if (rateEl) {
+    const pct = (maintenanceRatio * 100).toFixed(2);
+    rateEl.innerText = `${pct}%`;
+    rateEl.style.color = maintenanceRatio >= 1.3 ? '#10b981' : maintenanceRatio >= 1.0 ? '#f59e0b' : '#ef4444';
+  }
 }
 
 // Update loan config from input events
