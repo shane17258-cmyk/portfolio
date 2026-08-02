@@ -81,7 +81,8 @@ function loadData() {
       baseAmount: 1597333,
       baseDate: "2026-06-02",
       monthlyDeduction: 22000,
-      deductionDay: 2
+      deductionDay: 2,
+      pledgeAmount: 4000000
     };
     saveTransactionsToLocalStorage();
     savePricesToLocalStorage();
@@ -101,6 +102,10 @@ function loadData() {
   }
   if (savedLoanConfig) {
     loanConfig = JSON.parse(savedLoanConfig);
+    if (loanConfig.pledgeAmount === undefined) {
+      loanConfig.pledgeAmount = 4000000;
+      saveLoanConfigToLocalStorage();
+    }
   }
 
   if (savedPrices) {
@@ -117,7 +122,8 @@ function loadData() {
       baseAmount: 1597333,
       baseDate: "2026-06-02",
       monthlyDeduction: 22000,
-      deductionDay: 2
+      deductionDay: 2,
+      pledgeAmount: 4000000
     };
     saveLoanConfigToLocalStorage();
   }
@@ -305,11 +311,19 @@ function renderSummaryCards() {
 
   // Leverage ratio card updates
   const loanInfo = calculateLoanBalance();
-  const actualCapital = Math.max(0, portfolioSummary.totalInvested - loanInfo.currentBalance);
-  const leverage = actualCapital > 0 ? (portfolioSummary.totalValue / actualCapital) : 1;
+  const pledgeAmount = loanConfig.pledgeAmount || 0;
+  // 調整後總成本 = 原總成本 + 股票質押 (質押款買入 00631L)
+  const adjustedTotalCost = portfolioSummary.totalInvested + pledgeAmount;
+  // 調整後總市值 = 原總市值 + 股票質押 × 2 (00631L 2倍槓桿)
+  const adjustedTotalValue = portfolioSummary.totalValue + pledgeAmount * 2;
+  // 實際本金 = 調整後總成本 - 信貸餘額 - 股票質押
+  const actualCapital = Math.max(0, adjustedTotalCost - loanInfo.currentBalance - pledgeAmount);
+  const leverage = actualCapital > 0 ? (adjustedTotalValue / actualCapital) : 1;
 
   document.getElementById("loan-balance-display").innerText = `信貸餘額: ${formatCurrency(loanInfo.currentBalance)}`;
   document.getElementById("leverage-subtext").innerText = `實際本金: ${formatCurrency(actualCapital)}`;
+  document.getElementById("pledge-balance-display").innerText = `股票質押: ${formatCurrency(pledgeAmount)}`;
+  document.getElementById("adjusted-value-display").innerText = `調整後市值: ${formatCurrency(adjustedTotalValue)}`;
   
   const ratioEl = document.getElementById("leverage-ratio");
   ratioEl.innerText = `${leverage.toFixed(2)}x`;
@@ -1196,7 +1210,8 @@ function resetToDefaults() {
       baseAmount: 1597333,
       baseDate: "2026-06-02",
       monthlyDeduction: 22000,
-      deductionDay: 2
+      deductionDay: 2,
+      pledgeAmount: 4000000
     };
     
     saveTransactionsToLocalStorage();
@@ -1243,21 +1258,27 @@ function renderLoanInputs() {
   const loanBaseAmountEl = document.getElementById("loan-base-amount");
   const loanBaseDateEl = document.getElementById("loan-base-date");
   const loanDeductionEl = document.getElementById("loan-deduction");
+  const loanPledgeEl = document.getElementById("loan-pledge");
 
   if (loanBaseAmountEl) loanBaseAmountEl.value = loanConfig.baseAmount;
   if (loanBaseDateEl) loanBaseDateEl.value = loanConfig.baseDate;
   if (loanDeductionEl) loanDeductionEl.value = loanConfig.monthlyDeduction;
+  if (loanPledgeEl) loanPledgeEl.value = loanConfig.pledgeAmount || 0;
 
   const loanInfo = calculateLoanBalance();
-  const actualCapital = Math.max(0, portfolioSummary.totalInvested - loanInfo.currentBalance);
+  const pledgeAmount = loanConfig.pledgeAmount || 0;
+  const adjustedTotalCost = portfolioSummary.totalInvested + pledgeAmount;
+  const actualCapital = Math.max(0, adjustedTotalCost - loanInfo.currentBalance - pledgeAmount);
 
   const calcBalanceEl = document.getElementById("loan-calc-balance");
   const calcMonthsEl = document.getElementById("loan-calc-months");
   const calcCapitalEl = document.getElementById("loan-calc-capital");
+  const calcPledgeEl = document.getElementById("loan-calc-pledge");
 
   if (calcBalanceEl) calcBalanceEl.innerText = formatCurrency(loanInfo.currentBalance);
   if (calcMonthsEl) calcMonthsEl.innerText = `${loanInfo.monthsPassed} 期 (累計扣除 ${formatCurrency(loanInfo.totalDeducted)})`;
   if (calcCapitalEl) calcCapitalEl.innerText = formatCurrency(actualCapital);
+  if (calcPledgeEl) calcPledgeEl.innerText = formatCurrency(pledgeAmount);
 
   // Maintenance rate: fixed position quantities × current prices / 4M
   const fixedPositions = [
@@ -1281,7 +1302,7 @@ function renderLoanInputs() {
 
 // Update loan config from input events
 function updateLoanConfig(key, value) {
-  if (key === 'baseAmount' || key === 'monthlyDeduction') {
+  if (key === 'baseAmount' || key === 'monthlyDeduction' || key === 'pledgeAmount') {
     loanConfig[key] = parseFloat(value) || 0;
   } else if (key === 'baseDate') {
     loanConfig[key] = value;

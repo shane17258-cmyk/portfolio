@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>賴煜耀 - 證券資產配置與投資收益分析系統</title>
   <!-- Google Font & Style sheets -->
-  <link rel="stylesheet" href="styles.css?v=4">
+  <link rel="stylesheet" href="styles.css?v=5">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -98,6 +98,10 @@
         <div style="display: flex; justify-content: space-between; font-size: 11px; margin-top: 10px; color: var(--text-secondary); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px;">
           <span id="loan-balance-display">信貸餘額: $0</span>
           <span>按月2日遞減2.2萬</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 11px; margin-top: 4px; color: var(--text-secondary);">
+          <span id="pledge-balance-display">股票質押: $0</span>
+          <span id="adjusted-value-display">調整後市值: $0</span>
         </div>
       </div>
 
@@ -218,6 +222,11 @@
                 <input type="number" id="loan-deduction" class="form-control" value="22000" onchange="updateLoanConfig('monthlyDeduction', this.value)">
               </div>
             </div>
+
+            <div class="form-group" style="margin-top: 12px;">
+              <label class="form-label" for="loan-pledge">股票質押金額 (買00631L)</label>
+              <input type="number" id="loan-pledge" class="form-control" value="4000000" onchange="updateLoanConfig('pledgeAmount', this.value)">
+            </div>
             
             <div style="margin-top: 10px; padding: 12px; background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--border-color); border-radius: var(--radius-md); font-size: 12px;">
               <div class="calc-preview-row">
@@ -231,6 +240,10 @@
               <div class="calc-preview-row">
                 <span>實際自備本金:</span>
                 <span id="loan-calc-capital" style="font-weight: 600;">NT$ 0</span>
+              </div>
+              <div class="calc-preview-row">
+                <span>股票質押:</span>
+                <span id="loan-calc-pledge" style="font-weight: 600;">NT$ 0</span>
               </div>
             </div>
           </div>
@@ -381,8 +394,8 @@
   <div id="toast-container" class="toast-container"></div>
 
   <!-- Import application script files -->
-  <script src="data.js?v=4"></script>
-  <script src="app.js?v=4"></script>
+  <script src="data.js?v=5"></script>
+  <script src="app.js?v=5"></script>
 
 </body>
 </html>
