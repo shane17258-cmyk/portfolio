@@ -295,6 +295,10 @@ header {
   align-items: center;
 }
 
+.chart-wrapper-lg {
+  height: 320px;
+}
+
 .no-data-msg {
   color: var(--text-muted);
   text-align: center;
@@ -774,6 +778,179 @@ header {
   }
   .header-actions {
     flex-wrap: wrap;
+  }
+}
+/* ──────────────────────────────────────────────────────────────────────────── */
+
+/* ─── Responsive Web Design (RWD) ─────────────────────────────────────────── */
+
+/* Tablet & below */
+@media (max-width: 768px) {
+  .container {
+    padding: 20px 14px;
+  }
+
+  header {
+    margin-bottom: 20px;
+  }
+
+  .logo-section h1 {
+    font-size: 22px;
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .logo-section p {
+    font-size: 12px;
+  }
+
+  .header-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .header-actions .btn,
+  .header-actions label.btn {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 10px;
+    font-size: 13px;
+  }
+
+  #live-price-status {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .card {
+    padding: 18px;
+    border-radius: var(--radius-md);
+  }
+
+  .card-value-display {
+    font-size: 24px;
+  }
+
+  .card-trend {
+    font-size: 12px;
+  }
+
+  .allocation-card {
+    grid-column: 1 / -1;
+  }
+
+  .main-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .section-title {
+    font-size: 17px;
+  }
+
+  .section-title-bar {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius-sm);
+  }
+
+  table {
+    min-width: 720px;
+  }
+
+  th, td {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .chart-wrapper {
+    height: 210px;
+  }
+
+  .price-input-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-input-wrapper {
+    min-width: 100%;
+  }
+
+  .select-filter {
+    width: 100%;
+  }
+
+  .form-row-2 {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .modal-content {
+    margin: 0 12px;
+    max-height: 88vh;
+    overflow-y: auto;
+  }
+
+  .toast-container {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    align-items: stretch;
+  }
+
+  .toast {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-value-display {
+    font-size: 22px;
+  }
+
+  .header-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .history-section {
+    padding: 16px;
+  }
+
+  body {
+    padding-bottom: 40px;
+  }
+}
+
+/* Fix charts on narrow screens */
+@media (max-width: 1024px) {
+  .chart-wrapper {
+    height: 210px;
+  }
+  .chart-wrapper-lg {
+    height: 260px;
   }
 }
 /* ──────────────────────────────────────────────────────────────────────────── */
