@@ -1,5 +1,5 @@
 // Pre-populated transactions transcribed from the transaction statement
-const DATA_VERSION = 2; // 遞增此版本號會觸發重新載入預設交易
+const DATA_VERSION = 3; // 遞增此版本號會觸發重新載入預設交易
 const INITIAL_TRANSACTIONS = [
   // Page 1
   { date: "115/03/02", type: "buy", name: "元大台灣50", shares: 2000, price: 80.58, fee: 0, tax: 0, amount: 161160, net: 161160, dir: "收", ref: "p-005T-00" },
@@ -53,5 +53,15 @@ const INITIAL_TRANSACTIONS = [
   { date: "115/07/06", type: "buy", name: "元大台灣50", shares: 9, price: 108.64, fee: 1, tax: 0, amount: 977, net: 978, dir: "收", ref: "p006v" },
   { date: "115/07/06", type: "buy", name: "富邦台50", shares: 3, price: 252.22, fee: 1, tax: 0, amount: 756, net: 757, dir: "收", ref: "p00EB" },
   { date: "115/07/06", type: "buy", name: "元大S&P500", shares: 13, price: 75.56, fee: 1, tax: 0, amount: 982, net: 983, dir: "收", ref: "p00Eb" },
-  { date: "115/07/06", type: "buy", name: "富邦NASDAQ", shares: 8, price: 121.73, fee: 1, tax: 0, amount: 973, net: 974, dir: "收", ref: "p00F4" }
+  { date: "115/07/06", type: "buy", name: "富邦NASDAQ", shares: 8, price: 121.73, fee: 1, tax: 0, amount: 973, net: 974, dir: "收", ref: "p00F4" },
+
+  // Page 5 – 2026/08 定期定額（含股票質押買入 00631L 元大台灣50正2）
+  { date: "115/08/03", type: "buy", name: "元大台灣50正2", shares: 30000, price: 32.62, fee: 348, tax: 0, amount: 978600, net: 978948, dir: "收", ref: "A1377" },
+  { date: "115/08/05", type: "buy", name: "元大台灣50", shares: 9, price: 104.16, fee: 1, tax: 0, amount: 937, net: 938, dir: "收", ref: "p003L" },
+  { date: "115/08/05", type: "buy", name: "富邦台50", shares: 4, price: 238.38, fee: 1, tax: 0, amount: 953, net: 954, dir: "收", ref: "p007D" },
+  { date: "115/08/05", type: "buy", name: "元大台灣50正2", shares: 30000, price: 34.2, fee: 365, tax: 0, amount: 1026000, net: 1026365, dir: "收", ref: "A0363" },
+  { date: "115/08/05", type: "buy", name: "元大S&P500", shares: 12, price: 78.89, fee: 1, tax: 0, amount: 946, net: 947, dir: "收", ref: "p007S" },
+  { date: "115/08/05", type: "buy", name: "富邦NASDAQ", shares: 8, price: 123.35, fee: 1, tax: 0, amount: 986, net: 987, dir: "收", ref: "p007g" },
+  { date: "115/08/12", type: "buy", name: "元大台灣50", shares: 141, price: 105.03, fee: 1, tax: 0, amount: 14809, net: 14810, dir: "收", ref: "p00CA" },
+  { date: "115/08/12", type: "buy", name: "富邦台50", shares: 243, price: 240.61, fee: 1, tax: 0, amount: 58468, net: 58469, dir: "收", ref: "p00Mt" }
 ];

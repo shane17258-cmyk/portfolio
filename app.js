@@ -9,10 +9,11 @@ let loanConfig = {};
 
 // Default prices (last transaction prices as starting points)
 const DEFAULT_PRICES = {
-  "元大台灣50": 104.5,
-  "富邦台50": 242.0,
-  "元大S&P500": 74.7,
-  "富邦NASDAQ": 122.0
+  "元大台灣50": 105.03,
+  "富邦台50": 240.61,
+  "元大S&P500": 78.89,
+  "富邦NASDAQ": 123.35,
+  "元大台灣50正2": 34.2
 };
 
 // Chart instances
@@ -30,7 +31,8 @@ const STOCK_TWSE_MAP = {
   "元大台灣50":  "tse_0050.tw",
   "富邦台50":    "tse_006208.tw",
   "元大S&P500": "tse_00646.tw",
-  "富邦NASDAQ": "tse_00662.tw"
+  "富邦NASDAQ": "tse_00662.tw",
+  "元大台灣50正2": "tse_00631L.tw"
 };
 
 // Short ticker symbols for display
@@ -38,7 +40,8 @@ const STOCK_CODES = {
   "元大台灣50": "0050",
   "富邦台50": "006208",
   "元大S&P500": "00646",
-  "富邦NASDAQ": "00662"
+  "富邦NASDAQ": "00662",
+  "元大台灣50正2": "00631L"
 };
 
 function getStockDisplayName(name) {
@@ -467,7 +470,7 @@ function updateStockPrice(name, value) {
 function getUniqueStockNames() {
   const names = new Set(transactions.map(t => t.name));
   // Keep order consistent: 0050, 006208, 00646, 00662 first if present, then others
-  const order = ["元大台灣50", "富邦台50", "元大S&P500", "富邦NASDAQ"];
+  const order = ["元大台灣50", "富邦台50", "元大S&P500", "富邦NASDAQ", "元大台灣50正2"];
   const result = [];
   
   order.forEach(o => {
@@ -929,7 +932,8 @@ function getStockColor(name) {
     "元大台灣50": "#4f46e5",   // Indigo
     "富邦台50": "#10b981",     // Emerald Green
     "元大S&P500": "#f59e0b",   // Orange/Amber
-    "富邦NASDAQ": "#06b6d4"    // Cyan
+    "富邦NASDAQ": "#06b6d4",   // Cyan
+    "元大台灣50正2": "#f43f5e"  // Rose
   };
   return colors[name] || "#8b5cf6"; // Violet fallback
 }
@@ -1041,7 +1045,7 @@ function autoSuggestFeeAndTax() {
   // Taiwan ETF transaction rates:
   // Fee = 0.1425% (often with broker discount, e.g. 28% discount -> 0.0399%). Minimum is usually 1 TWD.
   // Tax = 0.1% for ETFs on sell.
-  const isEtf = ["元大台灣50", "富邦台50", "元大S&P500", "富邦NASDAQ"].includes(name);
+  const isEtf = ["元大台灣50", "富邦台50", "元大S&P500", "富邦NASDAQ", "元大台灣50正2"].includes(name);
   
   // Calculate standard 2.8折 fee
   const fee = Math.max(1, Math.round(amount * 0.001425 * 0.28));
