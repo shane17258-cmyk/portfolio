@@ -322,7 +322,7 @@ function renderSummaryCards() {
   document.getElementById("loan-balance-display").innerText = `信貸餘額: ${formatCurrency(loanInfo.currentBalance)}`;
   document.getElementById("leverage-subtext").innerText = `實際本金: ${formatCurrency(actualCapital)}`;
   document.getElementById("pledge-balance-display").innerText = `00631L曝險: ${formatCurrency(leverageStock.marketValue * 2)}`;
-  document.getElementById("adjusted-value-display").innerText = `調整後市值: ${formatCurrency(adjustedTotalValue)}`;
+  document.getElementById("adjusted-value-display").innerText = `曝險總市值: ${formatCurrency(adjustedTotalValue)}`;
   
   const ratioEl = document.getElementById("leverage-ratio");
   ratioEl.innerText = `${leverage.toFixed(2)}x`;
