@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="GlintPortfolio">
   <!-- Google Font & Style sheets -->
-  <link rel="stylesheet" href="styles.css?v=7">
+  <link rel="stylesheet" href="styles.css?v=8">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -110,7 +110,7 @@
           <span>按月2日遞減2.2萬</span>
         </div>
         <div style="display: flex; justify-content: space-between; font-size: 11px; margin-top: 4px; color: var(--text-secondary);">
-          <span id="pledge-balance-display">股票質押: $0</span>
+          <span id="pledge-balance-display">00631L曝險: $0</span>
           <span id="adjusted-value-display">調整後市值: $0</span>
         </div>
       </div>
@@ -234,8 +234,8 @@
             </div>
 
             <div class="form-group" style="margin-top: 12px;">
-              <label class="form-label" for="loan-pledge">股票質押金額 (買00631L)</label>
-              <input type="number" id="loan-pledge" class="form-control" value="4000000" onchange="updateLoanConfig('pledgeAmount', this.value)">
+              <label class="form-label" for="loan-pledge">00631L 買入成本 (質押買入)</label>
+              <div class="form-control" id="loan-pledge" style="display: flex; align-items: center; background: rgba(255, 255, 255, 0.03);">NT$ 0</div>
             </div>
             
             <div style="margin-top: 10px; padding: 12px; background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--border-color); border-radius: var(--radius-md); font-size: 12px;">
@@ -252,7 +252,7 @@
                 <span id="loan-calc-capital" style="font-weight: 600;">NT$ 0</span>
               </div>
               <div class="calc-preview-row">
-                <span>股票質押:</span>
+                <span>00631L 成本 (不計本金):</span>
                 <span id="loan-calc-pledge" style="font-weight: 600;">NT$ 0</span>
               </div>
             </div>
@@ -405,14 +405,14 @@
   <div id="toast-container" class="toast-container"></div>
 
   <!-- Import application script files -->
-  <script src="data.js?v=7"></script>
-  <script src="app.js?v=7"></script>
+  <script src="data.js?v=8"></script>
+  <script src="app.js?v=8"></script>
 
   <!-- Register Service Worker for PWA (offline support) -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=7')
+        navigator.serviceWorker.register('sw.js?v=8')
           .then(() => console.log('Service Worker registered'))
           .catch(err => console.warn('Service Worker registration failed:', err));
       });
