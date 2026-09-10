@@ -20,16 +20,20 @@ const DEFAULT_PRICES = {
   "Invesco QQQ": 293.69,
   "Tesla": 379.22,
   "Vanguard VTI": 378.73,
-  "Vanguard VXUS": 87.44
+  "Vanguard VXUS": 87.44,
+  "Nvidia": 226.72,
+  "Vanguard VOO": 706.3637
 };
 
-// 玉山複委託持倉快照 (USD; usdCost = 市值 - 截圖庫存損益)
+// 玉山＋台新複委託持倉快照 (USD; usdCost = 市值 - 截圖庫存損益)
 const FOREIGN_HOLDINGS = [
-  { name: "Palantir",      ticker: "PLTR", shares: 3,  usdCost: 432.2 },
-  { name: "Invesco QQQ",   ticker: "QQQ",  shares: 26, usdCost: 7681.72 },
-  { name: "Tesla",         ticker: "TSLA", shares: 3,  usdCost: 537.81 },
-  { name: "Vanguard VTI",  ticker: "VTI",  shares: 51, usdCost: 14500.05 },
-  { name: "Vanguard VXUS", ticker: "VXUS", shares: 36, usdCost: 2930.62 }
+  { name: "Palantir",      ticker: "PLTR", broker: "玉山", shares: 3,      usdCost: 432.2 },
+  { name: "Invesco QQQ",   ticker: "QQQ",  broker: "玉山", shares: 26,     usdCost: 7681.72 },
+  { name: "Tesla",         ticker: "TSLA", broker: "玉山", shares: 3,      usdCost: 537.81 },
+  { name: "Vanguard VTI",  ticker: "VTI",  broker: "玉山", shares: 51,     usdCost: 14500.05 },
+  { name: "Vanguard VXUS", ticker: "VXUS", broker: "玉山", shares: 36,     usdCost: 2930.62 },
+  { name: "Nvidia",        ticker: "NVDA", broker: "台新", shares: 9.0041, usdCost: 1000 },
+  { name: "Vanguard VOO",  ticker: "VOO",  broker: "台新", shares: 9.6454, usdCost: 5200 }
 ];
 
 // Live FX fetch state
@@ -65,7 +69,9 @@ const STOCK_CODES = {
   "Invesco QQQ": "QQQ",
   "Tesla": "TSLA",
   "Vanguard VTI": "VTI",
-  "Vanguard VXUS": "VXUS"
+  "Vanguard VXUS": "VXUS",
+  "Nvidia": "NVDA",
+  "Vanguard VOO": "VOO"
 };
 
 function getStockDisplayName(name) {
@@ -631,7 +637,38 @@ function renderForeignHoldings() {
   if (!tbody) return;
   tbody.innerHTML = "";
 
+  const addSubtotalRow = (label, cost, value, pnl) => {
+    const roi = cost > 0 ? (pnl / cost) * 100 : 0;
+    const tr = document.createElement("tr");
+    tr.className = "table-summary-row";
+    tr.innerHTML = `
+      <td>${label} (×${fxState.rate} 換算)</td>
+      <td>-</td>
+      <td>-</td>
+      <td>$${formatNumber(Math.round(value))}</td>
+      <td class="${pnl >= 0 ? 'text-profit' : 'text-loss'}">
+        ${formatCurrencyWithSign(pnl)}
+        <div style="font-size: 11px; margin-top: 2px;">
+          ${roi >= 0 ? '+' : ''}${roi.toFixed(2)}%
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  };
+
+  let currentBroker = null;
+  let subCost = 0, subValue = 0, subPnl = 0;
+
   foreignHoldings.forEach((h, idx) => {
+    if (h.broker !== currentBroker) {
+      if (currentBroker !== null) addSubtotalRow(`${currentBroker}小計`, subCost, subValue, subPnl);
+      currentBroker = h.broker;
+      subCost = 0; subValue = 0; subPnl = 0;
+    }
+    subCost += h.costTWD;
+    subValue += h.valueTWD;
+    subPnl += h.unrealizedTWD;
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>
@@ -639,6 +676,7 @@ function renderForeignHoldings() {
           <span style="width: 8px; height: 8px; border-radius: 50%; background: ${getStockColor(h.name)}"></span>
           ${getStockDisplayName(h.name)}
         </div>
+        <div style="font-size: 11px; color: var(--text-muted);">${h.broker}複委託</div>
       </td>
       <td>${formatNumber(h.shares)} 股</td>
       <td>
@@ -658,23 +696,8 @@ function renderForeignHoldings() {
     tbody.appendChild(tr);
   });
 
-  const sumRow = document.createElement("tr");
-  sumRow.className = "table-summary-row";
-  const totalRoi = portfolioSummary.foreignInvested > 0
-    ? (portfolioSummary.foreignUnrealized / portfolioSummary.foreignInvested) * 100 : 0;
-  sumRow.innerHTML = `
-    <td>小計 (×${fxState.rate} 換算)</td>
-    <td>-</td>
-    <td>-</td>
-    <td>$${formatNumber(Math.round(portfolioSummary.foreignValue))}</td>
-    <td class="${portfolioSummary.foreignUnrealized >= 0 ? 'text-profit' : 'text-loss'}">
-      ${formatCurrencyWithSign(portfolioSummary.foreignUnrealized)}
-      <div style="font-size: 11px; margin-top: 2px;">
-        ${totalRoi >= 0 ? '+' : ''}${totalRoi.toFixed(2)}%
-      </div>
-    </td>
-  `;
-  tbody.appendChild(sumRow);
+  if (currentBroker !== null) addSubtotalRow(`${currentBroker}小計`, subCost, subValue, subPnl);
+  addSubtotalRow("複委託合計", portfolioSummary.foreignInvested, portfolioSummary.foreignValue, portfolioSummary.foreignUnrealized);
 }
 
 // Get unique stock names present in transactions
@@ -1163,7 +1186,9 @@ function getStockColor(name) {
     "Invesco QQQ": "#fb923c",  // Orange
     "Tesla": "#facc15",        // Yellow
     "Vanguard VTI": "#38bdf8", // Light Blue
-    "Vanguard VXUS": "#4ade80" // Light Green
+    "Vanguard VXUS": "#4ade80", // Light Green
+    "Nvidia": "#22d3ee",      // Cyan
+    "Vanguard VOO": "#e879f9" // Fuchsia
   };
   return colors[name] || "#8b5cf6"; // Violet fallback
 }
