@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="GlintPortfolio">
   <!-- Google Font & Style sheets -->
-  <link rel="stylesheet" href="styles.css?v=11">
+  <link rel="stylesheet" href="styles.css?v=12">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -435,14 +435,14 @@
   <div id="toast-container" class="toast-container"></div>
 
   <!-- Import application script files -->
-  <script src="data.js?v=11"></script>
-  <script src="app.js?v=11"></script>
+  <script src="data.js?v=12"></script>
+  <script src="app.js?v=12"></script>
 
   <!-- Register Service Worker for PWA (offline support) -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=11')
+        navigator.serviceWorker.register('sw.js?v=12')
           .then(() => console.log('Service Worker registered'))
           .catch(err => console.warn('Service Worker registration failed:', err));
       });

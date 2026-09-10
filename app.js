@@ -22,7 +22,10 @@ const DEFAULT_PRICES = {
   "Vanguard VTI": 378.73,
   "Vanguard VXUS": 87.44,
   "Nvidia": 226.72,
-  "Vanguard VOO": 706.3637
+  "Vanguard VOO": 706.3637,
+  "永豐 TLT": 82.28,
+  "永豐 VTI": 378.66,
+  "永豐 VXUS": 87.51
 };
 
 // 玉山＋台新複委託持倉快照 (USD; usdCost = 市值 - 截圖庫存損益)
@@ -33,7 +36,10 @@ const FOREIGN_HOLDINGS = [
   { name: "Vanguard VTI",  ticker: "VTI",  broker: "玉山", shares: 51,     usdCost: 14500.05 },
   { name: "Vanguard VXUS", ticker: "VXUS", broker: "玉山", shares: 36,     usdCost: 2930.62 },
   { name: "Nvidia",        ticker: "NVDA", broker: "台新", shares: 9.0041, usdCost: 1000 },
-  { name: "Vanguard VOO",  ticker: "VOO",  broker: "台新", shares: 9.6454, usdCost: 5200 }
+  { name: "Vanguard VOO",  ticker: "VOO",  broker: "台新", shares: 9.6454, usdCost: 5200 },
+  { name: "永豐 TLT",  ticker: "TLT",  broker: "永豐", shares: 2.70155,  usdCost: 270.43 },
+  { name: "永豐 VTI",  ticker: "VTI",  broker: "永豐", shares: 0.44144,  usdCost: 100.18 },
+  { name: "永豐 VXUS", ticker: "VXUS", broker: "永豐", shares: 70.39134, usdCost: 4206.59 }
 ];
 
 // Live FX fetch state
@@ -71,7 +77,10 @@ const STOCK_CODES = {
   "Vanguard VTI": "VTI",
   "Vanguard VXUS": "VXUS",
   "Nvidia": "NVDA",
-  "Vanguard VOO": "VOO"
+  "Vanguard VOO": "VOO",
+  "永豐 TLT": "TLT",
+  "永豐 VTI": "VTI",
+  "永豐 VXUS": "VXUS"
 };
 
 function getStockDisplayName(name) {
@@ -1188,7 +1197,10 @@ function getStockColor(name) {
     "Vanguard VTI": "#38bdf8", // Light Blue
     "Vanguard VXUS": "#4ade80", // Light Green
     "Nvidia": "#22d3ee",      // Cyan
-    "Vanguard VOO": "#e879f9" // Fuchsia
+    "Vanguard VOO": "#e879f9", // Fuchsia
+    "永豐 TLT": "#f472b6",   // Pink
+    "永豐 VTI": "#60a5fa",   // Blue
+    "永豐 VXUS": "#2dd4bf"   // Teal
   };
   return colors[name] || "#8b5cf6"; // Violet fallback
 }
