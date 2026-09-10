@@ -11,11 +11,11 @@ let fxState = { rate: 31.76, updatedAt: null, source: '預設' };
 
 // Default prices (last transaction prices as starting points; foreign = USD)
 const DEFAULT_PRICES = {
-  "元大台灣50": 105.03,
-  "富邦台50": 240.61,
-  "元大S&P500": 78.89,
-  "富邦NASDAQ": 123.35,
-  "元大台灣50正2": 34.2,
+  "元大台灣50": 109.73,
+  "富邦台50": 251.48,
+  "元大S&P500": 76.84,
+  "富邦NASDAQ": 120.09,
+  "元大台灣50正2": 35.3,
   "Palantir": 184.9,
   "Invesco QQQ": 293.69,
   "Tesla": 379.22,

@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="GlintPortfolio">
   <!-- Google Font & Style sheets -->
-  <link rel="stylesheet" href="styles.css?v=15">
+  <link rel="stylesheet" href="styles.css?v=16">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -299,7 +299,7 @@
     <div class="history-section">
       <div class="section-title-bar">
         <h3 class="section-title">📜 歷史交易明細對帳單</h3>
-        <span style="font-size: 12px; color: var(--text-muted);" id="tx-count-display">共計 54 筆對帳紀錄</span>
+        <span style="font-size: 12px; color: var(--text-muted);" id="tx-count-display">共計 59 筆對帳紀錄</span>
       </div>
 
       <!-- Filters & Search Bar -->
@@ -438,14 +438,14 @@
   <div id="toast-container" class="toast-container"></div>
 
   <!-- Import application script files -->
-  <script src="data.js?v=15"></script>
-  <script src="app.js?v=15"></script>
+  <script src="data.js?v=16"></script>
+  <script src="app.js?v=16"></script>
 
   <!-- Register Service Worker for PWA (offline support) -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=15')
+        navigator.serviceWorker.register('sw.js?v=16')
           .then(() => console.log('Service Worker registered'))
           .catch(err => console.warn('Service Worker registration failed:', err));
       });
