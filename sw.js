@@ -1,14 +1,14 @@
 /* GlintPortfolio - Service Worker */
 
-const CACHE_VERSION = 'v9';
+const CACHE_VERSION = 'v10';
 const CACHE_NAME = `glint-portfolio-${CACHE_VERSION}`;
 
 const PRECACHE_ASSETS = [
   './',
   './index.html',
-  './styles.css?v=9',
-  './app.js?v=9',
-  './data.js?v=9',
+  './styles.css?v=10',
+  './app.js?v=10',
+  './data.js?v=10',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -17,11 +17,12 @@ const PRECACHE_ASSETS = [
   'https://cdn.jsdelivr.net/npm/chart.js'
 ];
 
-// Hosts that must always hit the network (live price APIs)
+// Hosts that must always hit the network (live price / FX APIs)
 const NETWORK_ONLY_HOSTS = [
   'mis.twse.com.tw',
   'corsproxy.io',
-  'allorigins.win'
+  'allorigins.win',
+  'bot.com.tw'
 ];
 
 self.addEventListener('install', (event) => {

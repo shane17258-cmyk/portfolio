@@ -6,15 +6,34 @@ let prices = {};
 let portfolioSummary = {};
 let stockHoldings = {};
 let loanConfig = {};
+let foreignHoldings = [];
+let fxState = { rate: 31.76, updatedAt: null, source: '預設' };
 
-// Default prices (last transaction prices as starting points)
+// Default prices (last transaction prices as starting points; foreign = USD)
 const DEFAULT_PRICES = {
   "元大台灣50": 105.03,
   "富邦台50": 240.61,
   "元大S&P500": 78.89,
   "富邦NASDAQ": 123.35,
-  "元大台灣50正2": 34.2
+  "元大台灣50正2": 34.2,
+  "Palantir": 184.9,
+  "Invesco QQQ": 293.69,
+  "Tesla": 379.22,
+  "Vanguard VTI": 378.73,
+  "Vanguard VXUS": 87.44
 };
+
+// 玉山複委託持倉快照 (USD; usdCost = 市值 - 截圖庫存損益)
+const FOREIGN_HOLDINGS = [
+  { name: "Palantir",      ticker: "PLTR", shares: 3,  usdCost: 432.2 },
+  { name: "Invesco QQQ",   ticker: "QQQ",  shares: 26, usdCost: 7681.72 },
+  { name: "Tesla",         ticker: "TSLA", shares: 3,  usdCost: 537.81 },
+  { name: "Vanguard VTI",  ticker: "VTI",  shares: 51, usdCost: 14500.05 },
+  { name: "Vanguard VXUS", ticker: "VXUS", shares: 36, usdCost: 2930.62 }
+];
+
+// Live FX fetch state
+let isFxFetching = false;
 
 // Chart instances
 let allocationChart = null;
@@ -41,7 +60,12 @@ const STOCK_CODES = {
   "富邦台50": "006208",
   "元大S&P500": "00646",
   "富邦NASDAQ": "00662",
-  "元大台灣50正2": "00631L"
+  "元大台灣50正2": "00631L",
+  "Palantir": "PLTR",
+  "Invesco QQQ": "QQQ",
+  "Tesla": "TSLA",
+  "Vanguard VTI": "VTI",
+  "Vanguard VXUS": "VXUS"
 };
 
 function getStockDisplayName(name) {
@@ -66,6 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Fetch live prices on startup and start auto-refresh
   fetchLivePrices();
+  fetchFXRate();
   startPriceAutoRefresh();
 });
 
@@ -124,6 +149,25 @@ function loadData() {
     };
     saveLoanConfigToLocalStorage();
   }
+
+  // Fill in missing price keys (e.g. newly added foreign stocks) without resetting user data
+  let priceMigrated = false;
+  Object.keys(DEFAULT_PRICES).forEach(k => {
+    if (prices[k] === undefined) {
+      prices[k] = DEFAULT_PRICES[k];
+      priceMigrated = true;
+    }
+  });
+  if (priceMigrated) savePricesToLocalStorage();
+
+  // Load saved FX rate
+  try {
+    const savedFx = localStorage.getItem("portfolio_fx_rate");
+    if (savedFx) {
+      const parsed = JSON.parse(savedFx);
+      if (parsed && parsed.rate > 0) fxState = parsed;
+    }
+  } catch (e) { /* keep default */ }
 }
 
 function saveTransactionsToLocalStorage() {
@@ -136,6 +180,10 @@ function savePricesToLocalStorage() {
 
 function saveLoanConfigToLocalStorage() {
   localStorage.setItem("portfolio_loan_config", JSON.stringify(loanConfig));
+}
+
+function saveFxToLocalStorage() {
+  localStorage.setItem("portfolio_fx_rate", JSON.stringify(fxState));
 }
 
 // Calculate portfolio metrics chronologically
@@ -256,13 +304,40 @@ function calculatePortfolio() {
   const totalNetProfit = totalUnrealizedPnL + totalRealizedPnL;
   const overallRoi = totalInvested > 0 ? (totalUnrealizedPnL / totalInvested) * 100 : 0;
 
+  // Foreign sub-brokerage holdings (玉山複委託, USD -> TWD, treated as own cash)
+  let foreignInvested = 0;
+  let foreignValue = 0;
+  let foreignUnrealized = 0;
+  const fxRate = fxState.rate > 0 ? fxState.rate : 0;
+  foreignHoldings = FOREIGN_HOLDINGS.map(f => {
+    const usdPrice = prices[f.name] || 0;
+    const costTWD = Math.round(f.usdCost * fxRate);
+    const valueTWD = Math.round(f.shares * usdPrice * fxRate);
+    const unrealizedTWD = valueTWD - costTWD;
+    foreignInvested += costTWD;
+    foreignValue += valueTWD;
+    foreignUnrealized += unrealizedTWD;
+    const roi = costTWD > 0 ? (unrealizedTWD / costTWD) * 100 : 0;
+    return { ...f, usdPrice, costTWD, valueTWD, unrealizedTWD, roi };
+  });
+
+  totalInvested += foreignInvested;
+  totalValue += foreignValue;
+  totalUnrealizedPnL += foreignUnrealized;
+
+  const totalNetProfitWithForeign = totalUnrealizedPnL + totalRealizedPnL;
+  const overallRoiWithForeign = totalInvested > 0 ? (totalUnrealizedPnL / totalInvested) * 100 : 0;
+
   portfolioSummary = {
     totalInvested,
     totalValue,
     totalUnrealizedPnL,
     totalRealizedPnL,
-    totalNetProfit,
-    overallRoi
+    totalNetProfit: totalNetProfitWithForeign,
+    overallRoi: overallRoiWithForeign,
+    foreignInvested,
+    foreignValue,
+    foreignUnrealized
   };
 }
 
@@ -272,6 +347,7 @@ function renderApp() {
   renderSummaryCards();
   renderHoldingsTable();
   renderPriceInputs();
+  renderForeignHoldings();
   renderLoanInputs();
   renderTransactionsTable();
   renderCharts();
@@ -462,6 +538,145 @@ function updateStockPrice(name, value) {
   showToast(`已更新 ${name} 現價至 $${numVal.toFixed(2)}`, "success");
 }
 
+function updateForeignPrice(index, value) {
+  const f = FOREIGN_HOLDINGS[index];
+  if (!f) return;
+  const numVal = parseFloat(value) || 0;
+  prices[f.name] = numVal;
+  savePricesToLocalStorage();
+  renderApp();
+  showToast(`已更新 ${getStockDisplayName(f.name)} 現價至 $${numVal.toFixed(2)}`, "success");
+}
+
+// ─── USD/TWD FX Rate from Bank of Taiwan ────────────────────────────────────
+
+function parseBOTRate(text) {
+  const lines = text.split(/\r?\n/);
+  for (const line of lines) {
+    if (/(^|[^A-Z])USD([^A-Z]|$)/.test(line)) {
+      const nums = line.match(/\d+\.\d+/g);
+      if (nums && nums.length >= 4) {
+        const spotBuy = parseFloat(nums[2]);
+        if (!isNaN(spotBuy) && spotBuy > 0) return spotBuy;
+      }
+      if (nums && nums.length > 0) {
+        const first = parseFloat(nums[0]);
+        if (!isNaN(first) && first > 0) return first;
+      }
+    }
+  }
+  return 0;
+}
+
+async function fetchFXRate() {
+  if (isFxFetching) return;
+  isFxFetching = true;
+  updateFxStatusUI('loading');
+
+  const BOT_URL = 'https://rate.bot.com.tw/xrt/flcsv/0/day';
+  const PROXY_URLS = [
+    `https://corsproxy.io/?url=${encodeURIComponent(BOT_URL)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(BOT_URL)}`
+  ];
+
+  let succeeded = false;
+  for (const proxyUrl of PROXY_URLS) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const resp = await fetch(proxyUrl, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (!resp.ok) continue;
+      const text = await resp.text();
+      const rate = parseBOTRate(text);
+      if (rate > 0) {
+        fxState = { rate, updatedAt: new Date().toISOString(), source: '台銀即期買入' };
+        saveFxToLocalStorage();
+        renderApp();
+        updateFxStatusUI('success');
+        showToast(`匯率已更新 USD/TWD ${rate}`, 'success');
+        succeeded = true;
+        break;
+      }
+    } catch (err) {
+      console.warn('FX proxy failed:', err.message);
+    }
+  }
+
+  if (!succeeded) {
+    updateFxStatusUI('error');
+  }
+  isFxFetching = false;
+}
+
+function updateFxStatusUI(status) {
+  const el = document.getElementById('fx-rate-display');
+  if (!el) return;
+  const timeStr = fxState.updatedAt
+    ? (() => { const d = new Date(fxState.updatedAt); return `${d.getMonth() + 1}/${d.getDate()} ${formatTime(d)}`; })()
+    : '預設';
+  if (status === 'loading') {
+    el.innerText = '更新中…';
+  } else if (status === 'error') {
+    el.innerText = `USD/TWD ${fxState.rate} (${fxState.source}・更新失敗沿用)`;
+  } else {
+    el.innerText = `USD/TWD ${fxState.rate} (${fxState.source} ${timeStr})`;
+  }
+}
+
+// Render foreign sub-brokerage holdings table
+function renderForeignHoldings() {
+  updateFxStatusUI('success');
+  const tbody = document.getElementById("foreign-table-body");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  foreignHoldings.forEach((h, idx) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>
+        <div class="stock-badge">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: ${getStockColor(h.name)}"></span>
+          ${getStockDisplayName(h.name)}
+        </div>
+      </td>
+      <td>${formatNumber(h.shares)} 股</td>
+      <td>
+        <span class="price-currency">US$</span>
+        <input type="number" step="0.01" class="price-num-input"
+               value="${h.usdPrice || 0}"
+               onchange="updateForeignPrice(${idx}, this.value)">
+      </td>
+      <td>$${formatNumber(Math.round(h.valueTWD))}</td>
+      <td class="${h.unrealizedTWD >= 0 ? 'text-profit' : 'text-loss'}">
+        ${formatCurrencyWithSign(h.unrealizedTWD)}
+        <div style="font-size: 11px; margin-top: 2px;">
+          ${h.roi >= 0 ? '+' : ''}${h.roi.toFixed(2)}%
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const sumRow = document.createElement("tr");
+  sumRow.className = "table-summary-row";
+  const totalRoi = portfolioSummary.foreignInvested > 0
+    ? (portfolioSummary.foreignUnrealized / portfolioSummary.foreignInvested) * 100 : 0;
+  sumRow.innerHTML = `
+    <td>小計 (×${fxState.rate} 換算)</td>
+    <td>-</td>
+    <td>-</td>
+    <td>$${formatNumber(Math.round(portfolioSummary.foreignValue))}</td>
+    <td class="${portfolioSummary.foreignUnrealized >= 0 ? 'text-profit' : 'text-loss'}">
+      ${formatCurrencyWithSign(portfolioSummary.foreignUnrealized)}
+      <div style="font-size: 11px; margin-top: 2px;">
+        ${totalRoi >= 0 ? '+' : ''}${totalRoi.toFixed(2)}%
+      </div>
+    </td>
+  `;
+  tbody.appendChild(sumRow);
+}
+
 // Get unique stock names present in transactions
 function getUniqueStockNames() {
   const names = new Set(transactions.map(t => t.name));
@@ -591,6 +806,13 @@ function renderCharts() {
     }
   });
 
+  // Include foreign sub-brokerage holdings (TWD converted)
+  foreignHoldings.forEach(h => {
+    labels.push(getStockDisplayName(h.name));
+    values.push(Math.round(h.valueTWD));
+    backgroundColors.push(getStockColor(h.name));
+  });
+
   if (allocationChart) {
     allocationChart.destroy();
   }
@@ -656,6 +878,13 @@ function renderCharts() {
       costValues.push(Math.round(h.totalCost));
       marketValues.push(Math.round(h.marketValue));
     }
+  });
+
+  // Include foreign sub-brokerage holdings (TWD converted)
+  foreignHoldings.forEach(h => {
+    barLabels.push(getStockDisplayName(h.name));
+    costValues.push(Math.round(h.costTWD));
+    marketValues.push(Math.round(h.valueTWD));
   });
 
   if (pnlChart) {
@@ -801,7 +1030,7 @@ function calculateHistoricalValueData() {
     });
   });
 
-  // Append current portfolio value using latest prices
+  // Append current TW portfolio value using latest prices (excludes foreign snapshot)
   const now = new Date();
   const todayTs = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
   const todayLabel = formatMinguoDate(todayTs);
@@ -929,7 +1158,12 @@ function getStockColor(name) {
     "富邦台50": "#10b981",     // Emerald Green
     "元大S&P500": "#f59e0b",   // Orange/Amber
     "富邦NASDAQ": "#06b6d4",   // Cyan
-    "元大台灣50正2": "#f43f5e"  // Rose
+    "元大台灣50正2": "#f43f5e",  // Rose
+    "Palantir": "#a78bfa",     // Violet
+    "Invesco QQQ": "#fb923c",  // Orange
+    "Tesla": "#facc15",        // Yellow
+    "Vanguard VTI": "#38bdf8", // Light Blue
+    "Vanguard VXUS": "#4ade80" // Light Green
   };
   return colors[name] || "#8b5cf6"; // Violet fallback
 }
@@ -1153,7 +1387,8 @@ function exportData() {
   const backup = {
     transactions,
     prices,
-    loanConfig
+    loanConfig,
+    fxState
   };
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup));
   const downloadAnchor = document.createElement('a');
@@ -1183,6 +1418,10 @@ function importData(event) {
         if (imported.loanConfig) {
           loanConfig = imported.loanConfig;
           saveLoanConfigToLocalStorage();
+        }
+        if (imported.fxState && imported.fxState.rate > 0) {
+          fxState = imported.fxState;
+          saveFxToLocalStorage();
         }
         
         saveTransactionsToLocalStorage();

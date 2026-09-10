@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="GlintPortfolio">
   <!-- Google Font & Style sheets -->
-  <link rel="stylesheet" href="styles.css?v=9">
+  <link rel="stylesheet" href="styles.css?v=10">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -161,7 +161,7 @@
         <div class="card">
           <div class="section-title-bar">
             <h3 class="section-title">📈 庫存總市值走勢</h3>
-            <span style="font-size: 12px; color: var(--text-muted);">以每筆交易日之成交價估算，最終日採用當前現價</span>
+            <span style="font-size: 12px; color: var(--text-muted);">以每筆交易日之成交價估算，最終日採用當前現價（台股交易明細，不含複委託快照）</span>
           </div>
           <div class="chart-wrapper chart-wrapper-lg">
             <canvas id="historicalValueChart"></canvas>
@@ -196,6 +196,36 @@
               </tbody>
             </table>
           </div>
+        </div>
+
+        <!-- Foreign Sub-brokerage Holdings Card -->
+        <div class="card">
+          <div class="section-title-bar">
+            <h3 class="section-title">🌎 複委託持倉 (玉山・美元→台幣)</h3>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span id="fx-rate-display" style="font-size: 12px; color: var(--text-muted);">USD/TWD -</span>
+              <button class="btn btn-secondary btn-sm" onclick="fetchFXRate()" title="從台銀網站更新匯率">
+                ↻ 匯率更新
+              </button>
+            </div>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>商品</th>
+                  <th>庫存股數</th>
+                  <th>USD 現價 (可編輯)</th>
+                  <th>台幣市值</th>
+                  <th>未實現損益 (ROI)</th>
+                </tr>
+              </thead>
+              <tbody id="foreign-table-body">
+                <!-- Javascript will populate this -->
+              </tbody>
+            </table>
+          </div>
+          <p style="font-size: 11px; color: var(--text-muted); margin-top: 10px;">* 成本以截圖日美元成本 × 現行匯率換算；USD現價可手動編輯，匯率取台銀即期買入價；複委託視為自有現金部位，計入總市值/總成本/本金</p>
         </div>
 
       </div>
@@ -405,14 +435,14 @@
   <div id="toast-container" class="toast-container"></div>
 
   <!-- Import application script files -->
-  <script src="data.js?v=9"></script>
-  <script src="app.js?v=9"></script>
+  <script src="data.js?v=10"></script>
+  <script src="app.js?v=10"></script>
 
   <!-- Register Service Worker for PWA (offline support) -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=9')
+        navigator.serviceWorker.register('sw.js?v=10')
           .then(() => console.log('Service Worker registered'))
           .catch(err => console.warn('Service Worker registration failed:', err));
       });
