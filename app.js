@@ -577,10 +577,19 @@ function parseBOTRate(text) {
   return 0;
 }
 
+// Throttled FX refresh: at most once per hour (BOT updates a few times daily)
+async function maybeFetchFXRate() {
+  if (isFxFetching) return;
+  if (fxState.updatedAt) {
+    const ageMs = Date.now() - new Date(fxState.updatedAt).getTime();
+    if (ageMs < 3600000) return;
+  }
+  await fetchFXRate();
+}
+
 async function fetchFXRate() {
   if (isFxFetching) return;
-  isFxFetching = true;
-  updateFxStatusUI('loading');
+  isFxFetching = true;  updateFxStatusUI('loading');
 
   const BOT_URL = 'https://rate.bot.com.tw/xrt/flcsv/0/day';
   const PROXY_URLS = [
@@ -1777,6 +1786,7 @@ function startPriceAutoRefresh() {
   const tick = async () => {
     await fetchLivePrices();
     await fetchUSPrices();
+    await maybeFetchFXRate();
   };
   const interval = isTWSEMarketOpen() ? 30000 : 300000;
   priceAutoRefreshTimer = setInterval(tick, interval);
