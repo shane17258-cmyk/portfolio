@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="GlintPortfolio">
   <!-- Google Font & Style sheets -->
-  <link rel="stylesheet" href="styles.css?v=13">
+  <link rel="stylesheet" href="styles.css?v=14">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -218,7 +218,7 @@
                 <tr>
                   <th>商品</th>
                   <th>庫存股數</th>
-                  <th>USD 現價 (可編輯)</th>
+                  <th>USD 現價 (自動)</th>
                   <th>台幣市值</th>
                   <th>未實現損益 (ROI)</th>
                 </tr>
@@ -228,7 +228,7 @@
               </tbody>
             </table>
           </div>
-          <p style="font-size: 11px; color: var(--text-muted); margin-top: 10px;">* 成本以券商截圖美元成本 × 現行匯率換算；USD現價自動更新(Stooq收盤價)亦可手動編輯，匯率取台銀即期買入價；複委託視為自有現金部位，計入總市值/總成本/本金</p>
+          <p style="font-size: 11px; color: var(--text-muted); margin-top: 10px;">* 成本以券商截圖美元成本 × 現行匯率換算；USD現價自動更新(Stooq收盤價)，匯率取台銀即期買入價；複委託視為自有現金部位，計入總市值/總成本/本金</p>
         </div>
 
       </div>
@@ -438,14 +438,14 @@
   <div id="toast-container" class="toast-container"></div>
 
   <!-- Import application script files -->
-  <script src="data.js?v=13"></script>
-  <script src="app.js?v=13"></script>
+  <script src="data.js?v=14"></script>
+  <script src="app.js?v=14"></script>
 
   <!-- Register Service Worker for PWA (offline support) -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=13')
+        navigator.serviceWorker.register('sw.js?v=14')
           .then(() => console.log('Service Worker registered'))
           .catch(err => console.warn('Service Worker registration failed:', err));
       });

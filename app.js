@@ -557,16 +557,6 @@ function updateStockPrice(name, value) {
   showToast(`已更新 ${name} 現價至 $${numVal.toFixed(2)}`, "success");
 }
 
-function updateForeignPrice(index, value) {
-  const f = FOREIGN_HOLDINGS[index];
-  if (!f) return;
-  const numVal = parseFloat(value) || 0;
-  prices[f.name] = numVal;
-  savePricesToLocalStorage();
-  renderApp();
-  showToast(`已更新 ${getStockDisplayName(f.name)} 現價至 $${numVal.toFixed(2)}`, "success");
-}
-
 // ─── USD/TWD FX Rate from Bank of Taiwan ────────────────────────────────────
 
 function parseBOTRate(text) {
@@ -751,12 +741,7 @@ function renderForeignHoldings() {
         <div style="font-size: 11px; color: var(--text-muted);">${h.broker}複委託</div>
       </td>
       <td>${formatNumber(h.shares)} 股</td>
-      <td>
-        <span class="price-currency">US$</span>
-        <input type="number" step="0.01" class="price-num-input"
-               value="${h.usdPrice || 0}"
-               onchange="updateForeignPrice(${idx}, this.value)">
-      </td>
+      <td>$${formatDecimal(h.usdPrice, 2)}</td>
       <td>$${formatNumber(Math.round(h.valueTWD))}</td>
       <td class="${h.unrealizedTWD >= 0 ? 'text-profit' : 'text-loss'}">
         ${formatCurrencyWithSign(h.unrealizedTWD)}
