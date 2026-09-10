@@ -1,14 +1,14 @@
 /* GlintPortfolio - Service Worker */
 
-const CACHE_VERSION = 'v12';
+const CACHE_VERSION = 'v13';
 const CACHE_NAME = `glint-portfolio-${CACHE_VERSION}`;
 
 const PRECACHE_ASSETS = [
   './',
   './index.html',
-  './styles.css?v=12',
-  './app.js?v=12',
-  './data.js?v=12',
+  './styles.css?v=13',
+  './app.js?v=13',
+  './data.js?v=13',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -22,7 +22,8 @@ const NETWORK_ONLY_HOSTS = [
   'mis.twse.com.tw',
   'corsproxy.io',
   'allorigins.win',
-  'bot.com.tw'
+  'bot.com.tw',
+  'stooq.com'
 ];
 
 self.addEventListener('install', (event) => {

@@ -45,6 +45,9 @@ const FOREIGN_HOLDINGS = [
 // Live FX fetch state
 let isFxFetching = false;
 
+// Live US price fetch state
+let isUSFetching = false;
+
 // Chart instances
 let allocationChart = null;
 let pnlChart = null;
@@ -105,6 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Fetch live prices on startup and start auto-refresh
   fetchLivePrices();
+  fetchUSPrices();
   fetchFXRate();
   startPriceAutoRefresh();
 });
@@ -637,6 +641,65 @@ function updateFxStatusUI(status) {
   } else {
     el.innerText = `USD/TWD ${fxState.rate} (${fxState.source} ${timeStr})`;
   }
+}
+
+// ─── US Stock Prices from Stooq (free EOD/delayed quotes) ────────────────────
+
+function parseStooqCSV(text) {
+  const result = {};
+  const lines = text.trim().split(/\r?\n/);
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(',');
+    if (cols.length < 7) continue;
+    const symbol = cols[0].trim().toLowerCase();
+    const close = parseFloat(cols[6]);
+    if (symbol && !isNaN(close) && close > 0) result[symbol] = close;
+  }
+  return result;
+}
+
+async function fetchUSPrices() {
+  if (isUSFetching) return;
+  isUSFetching = true;
+
+  const symbols = FOREIGN_HOLDINGS.map(f => `${STOCK_CODES[f.name].toLowerCase()}.us`).join(',');
+  const STOOQ_URL = `https://stooq.com/q/l/?s=${symbols}&f=sd2t2ohlcv&h&e=csv`;
+  const PROXY_URLS = [
+    `https://corsproxy.io/?url=${encodeURIComponent(STOOQ_URL)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(STOOQ_URL)}`
+  ];
+
+  for (const proxyUrl of PROXY_URLS) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const resp = await fetch(proxyUrl, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (!resp.ok) continue;
+      const quotes = parseStooqCSV(await resp.text());
+
+      let updatedCount = 0;
+      FOREIGN_HOLDINGS.forEach(f => {
+        const key = `${STOCK_CODES[f.name].toLowerCase()}.us`;
+        if (quotes[key] > 0) {
+          prices[f.name] = quotes[key];
+          updatedCount++;
+        }
+      });
+
+      if (updatedCount > 0) {
+        savePricesToLocalStorage();
+        renderApp();
+        showToast(`已更新 ${updatedCount} 檔美股現價 (Stooq收盤價)`, 'success');
+        isUSFetching = false;
+        return;
+      }
+    } catch (err) {
+      console.warn('US price proxy failed:', err.message);
+    }
+  }
+
+  isUSFetching = false;
 }
 
 // Render foreign sub-brokerage holdings table
@@ -1728,6 +1791,7 @@ function startPriceAutoRefresh() {
   if (priceAutoRefreshTimer) clearInterval(priceAutoRefreshTimer);
   const tick = async () => {
     await fetchLivePrices();
+    await fetchUSPrices();
   };
   const interval = isTWSEMarketOpen() ? 30000 : 300000;
   priceAutoRefreshTimer = setInterval(tick, interval);
