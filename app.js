@@ -25,7 +25,10 @@ const DEFAULT_PRICES = {
   "Vanguard VOO": 706.3637,
   "永豐 TLT": 82.28,
   "永豐 VTI": 378.66,
-  "永豐 VXUS": 87.51
+  "永豐 VXUS": 87.51,
+  "國泰 DRAM": 59.10,
+  "國泰 QQQ": 714.88,
+  "國泰 VXUS": 87.14
 };
 
 // 玉山＋台新複委託持倉快照 (USD; usdCost = 市值 - 截圖庫存損益)
@@ -39,7 +42,10 @@ const FOREIGN_HOLDINGS = [
   { name: "Vanguard VOO",  ticker: "VOO",  broker: "台新", shares: 9.6454, usdCost: 5200 },
   { name: "永豐 TLT",  ticker: "TLT",  broker: "永豐", shares: 2.70155,  usdCost: 270.43 },
   { name: "永豐 VTI",  ticker: "VTI",  broker: "永豐", shares: 0.44144,  usdCost: 100.18 },
-  { name: "永豐 VXUS", ticker: "VXUS", broker: "永豐", shares: 70.39134, usdCost: 4206.59 }
+  { name: "永豐 VXUS", ticker: "VXUS", broker: "永豐", shares: 70.39134, usdCost: 4206.59 },
+  { name: "國泰 DRAM", ticker: "DRAM", broker: "國泰", shares: 20,        usdCost: 1133.00 },
+  { name: "國泰 QQQ",  ticker: "QQQ",  broker: "國泰", shares: 70.20446,  usdCost: 50000.70 },
+  { name: "國泰 VXUS", ticker: "VXUS", broker: "國泰", shares: 615.19232, usdCost: 50001.00 }
 ];
 
 // Live FX fetch state
@@ -83,7 +89,10 @@ const STOCK_CODES = {
   "Vanguard VOO": "VOO",
   "永豐 TLT": "TLT",
   "永豐 VTI": "VTI",
-  "永豐 VXUS": "VXUS"
+  "永豐 VXUS": "VXUS",
+  "國泰 DRAM": "DRAM",
+  "國泰 QQQ": "QQQ",
+  "國泰 VXUS": "VXUS"
 };
 
 function getStockDisplayName(name) {
@@ -1257,7 +1266,10 @@ function getStockColor(name) {
     "Vanguard VOO": "#e879f9", // Fuchsia
     "永豐 TLT": "#f472b6",   // Pink
     "永豐 VTI": "#60a5fa",   // Blue
-    "永豐 VXUS": "#2dd4bf"   // Teal
+    "永豐 VXUS": "#2dd4bf",  // Teal
+    "國泰 DRAM": "#f0abfc",  // Light Fuchsia
+    "國泰 QQQ": "#fdba74",   // Light Orange
+    "國泰 VXUS": "#5eead4"   // Light Teal
   };
   return colors[name] || "#8b5cf6"; // Violet fallback
 }
