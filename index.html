@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="GlintPortfolio">
   <!-- Google Font & Style sheets -->
-  <link rel="stylesheet" href="styles.css?v=17">
+  <link rel="stylesheet" href="styles.css?v=18">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -438,16 +438,25 @@
   <div id="toast-container" class="toast-container"></div>
 
   <!-- Import application script files -->
-  <script src="data.js?v=17"></script>
-  <script src="app.js?v=17"></script>
+  <script src="data.js?v=18"></script>
+  <script src="app.js?v=18"></script>
 
-  <!-- Register Service Worker for PWA (offline support) -->
+  <!-- Register Service Worker for PWA (offline support + auto-update) -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=17')
+        navigator.serviceWorker.register('sw.js?v=18')
           .then(() => console.log('Service Worker registered'))
           .catch(err => console.warn('Service Worker registration failed:', err));
+      });
+      // Auto-reload when a new Service Worker takes over (no more Ctrl+F5)
+      let swRefreshing = false;
+      const hadController = !!navigator.serviceWorker.controller;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (hadController && !swRefreshing) {
+          swRefreshing = true;
+          window.location.reload();
+        }
       });
     }
   </script>

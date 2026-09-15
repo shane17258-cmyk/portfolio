@@ -1,14 +1,14 @@
 /* GlintPortfolio - Service Worker */
 
-const CACHE_VERSION = 'v17';
+const CACHE_VERSION = 'v18';
 const CACHE_NAME = `glint-portfolio-${CACHE_VERSION}`;
 
 const PRECACHE_ASSETS = [
   './',
   './index.html',
-  './styles.css?v=17',
-  './app.js?v=17',
-  './data.js?v=17',
+  './styles.css?v=18',
+  './app.js?v=18',
+  './data.js?v=18',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -30,7 +30,8 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => Promise.allSettled(
-        PRECACHE_ASSETS.map((url) => cache.add(url))
+        // cache:'reload' bypasses the browser HTTP cache so fresh files are cached
+        PRECACHE_ASSETS.map((url) => cache.add(new Request(url, { cache: 'reload' })))
       ))
       .then(() => self.skipWaiting())
   );
@@ -56,10 +57,10 @@ self.addEventListener('fetch', (event) => {
   const isNetworkOnly = NETWORK_ONLY_HOSTS.some((host) => url.hostname.includes(host));
   if (isNetworkOnly) return;
 
-  // Navigation (HTML pages): network-first with cache fallback
+  // Navigation (HTML pages): network-first with cache fallback (bypass HTTP cache)
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
+      fetch(new Request(request.url, { cache: 'reload' }))
         .then((response) => {
           const copy = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put('./index.html', copy));
@@ -70,10 +71,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets: stale-while-revalidate
+  // Static assets: stale-while-revalidate (network bypasses HTTP cache)
   event.respondWith(
     caches.match(request).then((cached) => {
-      const networkFetch = fetch(request)
+      const networkFetch = fetch(new Request(request.url, { cache: 'reload', mode: request.mode, credentials: request.credentials, redirect: request.redirect }))
         .then((response) => {
           if (response && (response.ok || response.type === 'opaque')) {
             const copy = response.clone();
