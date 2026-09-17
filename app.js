@@ -1716,7 +1716,9 @@ async function fetchLivePrices() {
 
   const PROXY_URLS = [
     `https://corsproxy.io/?url=${encodeURIComponent(TWSE_URL)}`,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(TWSE_URL)}`
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(TWSE_URL)}`,
+    `https://proxy.corsfix.com/?${encodeURIComponent(TWSE_URL)}`,
+    `https://yacdn.org/proxy/${TWSE_URL}`
   ];
 
   let lastError = null;
@@ -1725,7 +1727,7 @@ async function fetchLivePrices() {
   for (const proxyUrl of PROXY_URLS) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       const resp = await fetch(proxyUrl, { signal: controller.signal });
       clearTimeout(timeoutId);
@@ -1735,11 +1737,19 @@ async function fetchLivePrices() {
         continue;
       }
 
-      const data = await resp.json();
+      // yacdn returns JSON directly, others may wrap; try parse generously
+      let data;
+      try { data = await resp.json(); } catch (e) { lastError = e; continue; }
 
       if (data.rtcode !== '0000' || !Array.isArray(data.msgArray)) {
-        lastError = new Error('Invalid response from TWSE');
-        continue;
+        // Some proxies (allorigins/get) wrap in .contents; unwrap if present
+        if (data.contents) {
+          try { data = JSON.parse(data.contents); } catch (e) {}
+        }
+        if (data.rtcode !== '0000' || !Array.isArray(data.msgArray)) {
+          lastError = new Error('Invalid response from TWSE');
+          continue;
+        }
       }
 
       let updatedCount = 0;
@@ -1815,8 +1825,8 @@ function updateFetchStatusUI(status) {
   const configs = {
     loading: { dot: '🔄', text: '更新中…',        color: '#f59e0b' },
     success: { dot: '🟢', text: lastPriceFetchTime ? `${formatTime(lastPriceFetchTime)} 更新` : '已更新', color: '#10b981' },
-    closed:  { dot: '🟡', text: '收盤(使用前收)', color: '#f59e0b' },
-    error:   { dot: '🔴', text: '更新失敗',        color: '#ef4444' },
+    closed:  { dot: '🟡', text: '收盤(使用快取)', color: '#f59e0b' },
+    error:   { dot: '🟠', text: '連線不穩（快取價）', color: '#f59e0b' },
   };
 
   const cfg = configs[status] || configs.error;
