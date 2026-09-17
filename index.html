@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="GlintPortfolio">
   <!-- Google Font & Style sheets -->
-  <link rel="stylesheet" href="styles.css?v=18">
+  <link rel="stylesheet" href="styles.css?v=19">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -438,15 +438,31 @@
   <div id="toast-container" class="toast-container"></div>
 
   <!-- Import application script files -->
-  <script src="data.js?v=18"></script>
-  <script src="app.js?v=18"></script>
+  <script src="data.js?v=19"></script>
+  <script src="app.js?v=19"></script>
 
   <!-- Register Service Worker for PWA (offline support + auto-update) -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=18')
-          .then(() => console.log('Service Worker registered'))
+        navigator.serviceWorker.register('sw.js?v=19')
+          .then(reg => {
+            console.log('Service Worker registered');
+            // Poll for updates: Android/iOS PWA otherwise stays on old version until closed
+            setInterval(() => reg.update(), 60 * 1000);
+            document.addEventListener('visibilitychange', () => {
+              if (document.visibilityState === 'visible') reg.update();
+            });
+            reg.addEventListener('updatefound', () => {
+              const nw = reg.installing;
+              if (!nw) return;
+              nw.addEventListener('statechange', () => {
+                if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log('New Service Worker installed, will activate shortly');
+                }
+              });
+            });
+          })
           .catch(err => console.warn('Service Worker registration failed:', err));
       });
       // Auto-reload when a new Service Worker takes over (no more Ctrl+F5)
@@ -458,6 +474,19 @@
           window.location.reload();
         }
       });
+      // Fallback: also force reload if version mismatch detected via meta (covers iOS standalone cache)
+      setTimeout(async () => {
+        try {
+          const res = await fetch('./index.html', { cache: 'no-store' });
+          const txt = await res.text();
+          const m = txt.match(/styles\.css\?v=(\d+)/);
+          const cur = document.querySelector('link[href*="styles.css"]')?.href.match(/v=(\d+)/)?.[1];
+          if (m && cur && m[1] !== cur) {
+            console.log('Version mismatch detected', cur, '->', m[1], 'reloading');
+            window.location.reload();
+          }
+        } catch (e) {}
+      }, 3000);
     }
   </script>
 
