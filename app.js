@@ -11,11 +11,11 @@ let fxState = { rate: 31.76, updatedAt: null, source: '預設' };
 
 // Default prices (last transaction prices as starting points; foreign = USD)
 const DEFAULT_PRICES = {
-  "元大台灣50": 109.73,
-  "富邦台50": 251.48,
-  "元大S&P500": 76.84,
-  "富邦NASDAQ": 120.09,
-  "元大台灣50正2": 35.3,
+  "元大台灣50": 109.85,
+  "富邦台50": 251.20,
+  "元大S&P500": 76.60,
+  "富邦NASDAQ": 120.50,
+  "元大台灣50正2": 37.65,
   "Palantir": 184.9,
   "Invesco QQQ": 293.69,
   "Tesla": 379.22,
@@ -71,6 +71,15 @@ const STOCK_TWSE_MAP = {
   "元大S&P500": "tse_00646.tw",
   "富邦NASDAQ": "tse_00662.tw",
   "元大台灣50正2": "tse_00631L.tw"
+};
+
+// Yahoo Finance ticker mapping (stockName -> Yahoo Finance symbol)
+const STOCK_YAHOO_MAP = {
+  "元大台灣50":     "0050.TW",
+  "富邦台50":       "006208.TW",
+  "元大S&P500":    "00646.TW",
+  "富邦NASDAQ":    "00662.TW",
+  "元大台灣50正2": "00631L.TW"
 };
 
 // Short ticker symbols for display
@@ -1699,101 +1708,125 @@ function buildTWSEQuery() {
 }
 
 /**
- * Fetch live prices from TWSE MIS via CORS proxies.
+ * Fetch live prices for Taiwan stocks via Yahoo Finance (CORS-friendly, no proxy).
+ * Falls back to TWSE MIS + CORS proxy chain if Yahoo fails.
  * Updates the `prices` state and re-renders the UI.
- * Falls back through multiple proxy URLs if one fails.
  */
 async function fetchLivePrices() {
   if (isPriceFetching) return;
 
-  const query = buildTWSEQuery();
-  if (!query) return;
-
   isPriceFetching = true;
   updateFetchStatusUI('loading');
 
-  const TWSE_URL = `https://mis.twse.com.tw/stock/api/getStockInfo.jsp?json=1&delay=0&ex_ch=${encodeURIComponent(query)}`;
-
-  const PROXY_URLS = [
-    `https://corsproxy.io/?url=${encodeURIComponent(TWSE_URL)}`,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(TWSE_URL)}`,
-    `https://proxy.corsfix.com/?${encodeURIComponent(TWSE_URL)}`,
-    `https://yacdn.org/proxy/${TWSE_URL}`
-  ];
-
+  // --- Strategy 1: Yahoo Finance (no proxy needed) ---
+  let updatedCount = 0;
   let lastError = null;
-  let succeeded = false;
 
-  for (const proxyUrl of PROXY_URLS) {
-    try {
+  const yahooNames = Object.keys(STOCK_YAHOO_MAP);
+  const yahooResults = await Promise.allSettled(
+    yahooNames.map(async name => {
+      const symbol = STOCK_YAHOO_MAP[name];
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-      const resp = await fetch(proxyUrl, { signal: controller.signal });
-      clearTimeout(timeoutId);
-
-      if (!resp.ok) {
-        lastError = new Error(`HTTP ${resp.status}`);
-        continue;
-      }
-
-      // yacdn returns JSON directly, others may wrap; try parse generously
-      let data;
-      try { data = await resp.json(); } catch (e) { lastError = e; continue; }
-
-      if (data.rtcode !== '0000' || !Array.isArray(data.msgArray)) {
-        // Some proxies (allorigins/get) wrap in .contents; unwrap if present
-        if (data.contents) {
-          try { data = JSON.parse(data.contents); } catch (e) {}
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      try {
+        const resp = await fetch(
+          `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`,
+          { signal: controller.signal }
+        );
+        clearTimeout(timeoutId);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        const meta = data?.chart?.result?.[0]?.meta;
+        if (!meta) throw new Error('No chart data');
+        // Prefer regularMarketPrice; fallback to fulldayPrice or chartPreviousClose
+        const price = meta.regularMarketPrice || meta.fulldayPrice || meta.chartPreviousClose;
+        if (price && price > 0) {
+          prices[name] = price;
+          updatedCount++;
         }
+      } catch (err) {
+        clearTimeout(timeoutId);
+        console.warn(`Yahoo ${symbol} failed:`, err.message);
+        lastError = err;
+      }
+    })
+  );
+
+  if (updatedCount > 0) {
+    savePricesToLocalStorage();
+    lastPriceFetchTime = new Date();
+    renderApp();
+    updateFetchStatusUI('success');
+    showToast(`已更新 ${updatedCount} 支台股現價 (${formatTime(lastPriceFetchTime)})`, 'success');
+    isPriceFetching = false;
+    return;
+  }
+
+  // --- Strategy 2: TWSE MIS via CORS proxies (fallback) ---
+  console.warn('Yahoo Finance failed for all TWSE stocks, trying TWSE MIS proxies...');
+  const query = buildTWSEQuery();
+  if (query) {
+    const TWSE_URL = `https://mis.twse.com.tw/stock/api/getStockInfo.jsp?json=1&delay=0&ex_ch=${encodeURIComponent(query)}`;
+    const PROXY_URLS = [
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(TWSE_URL)}`,
+      `https://corsproxy.io/?url=${encodeURIComponent(TWSE_URL)}`,
+      `https://proxy.corsfix.com/?${encodeURIComponent(TWSE_URL)}`,
+      `https://yacdn.org/proxy/${TWSE_URL}`
+    ];
+
+    for (const proxyUrl of PROXY_URLS) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const resp = await fetch(proxyUrl, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (!resp.ok) { lastError = new Error(`HTTP ${resp.status}`); continue; }
+
+        let data;
+        try { data = await resp.json(); } catch (e) { lastError = e; continue; }
         if (data.rtcode !== '0000' || !Array.isArray(data.msgArray)) {
-          lastError = new Error('Invalid response from TWSE');
-          continue;
-        }
-      }
-
-      let updatedCount = 0;
-      data.msgArray.forEach(item => {
-        const priceStr = item.z && item.z !== '-' ? item.z : item.pz;
-        const price = parseFloat(priceStr);
-        if (!isNaN(price) && price > 0) {
-          const matchedName = Object.keys(STOCK_TWSE_MAP).find(name => {
-            const code = STOCK_TWSE_MAP[name];
-            return code.includes(item.c);
-          });
-          if (matchedName) {
-            prices[matchedName] = price;
-            updatedCount++;
+          if (data.contents) { try { data = JSON.parse(data.contents); } catch (e) {} }
+          if (data.rtcode !== '0000' || !Array.isArray(data.msgArray)) {
+            lastError = new Error('Invalid response from TWSE');
+            continue;
           }
         }
-      });
 
-      if (updatedCount > 0) {
-        savePricesToLocalStorage();
-        lastPriceFetchTime = new Date();
-        renderApp();
-        updateFetchStatusUI('success');
-        showToast(`已更新 ${updatedCount} 支標的現價 (${formatTime(lastPriceFetchTime)})`, 'success');
-      } else {
-        updateFetchStatusUI('closed');
+        updatedCount = 0;
+        data.msgArray.forEach(item => {
+          const priceStr = item.z && item.z !== '-' ? item.z : item.pz;
+          const price = parseFloat(priceStr);
+          if (!isNaN(price) && price > 0) {
+            const matchedName = Object.keys(STOCK_TWSE_MAP).find(name => {
+              const code = STOCK_TWSE_MAP[name];
+              return code.includes(item.c);
+            });
+            if (matchedName) { prices[matchedName] = price; updatedCount++; }
+          }
+        });
+
+        if (updatedCount > 0) {
+          savePricesToLocalStorage();
+          lastPriceFetchTime = new Date();
+          renderApp();
+          updateFetchStatusUI('success');
+          showToast(`已更新 ${updatedCount} 支標的現價 (TWSE 備援, ${formatTime(lastPriceFetchTime)})`, 'success');
+          isPriceFetching = false;
+          return;
+        }
+      } catch (err) {
+        lastError = err;
+        console.warn('TWSE proxy failed:', err.message);
       }
-
-      succeeded = true;
-      break;
-
-    } catch (err) {
-      lastError = err;
-      console.warn('Proxy failed:', err.message);
     }
   }
 
-  if (!succeeded) {
-    if (!isTWSEMarketOpen()) {
-      updateFetchStatusUI('closed');
-    } else {
-      console.warn('All live price fetch attempts failed:', lastError?.message);
-      updateFetchStatusUI('error');
-    }
+  // --- All strategies failed ---
+  if (!isTWSEMarketOpen()) {
+    updateFetchStatusUI('closed');
+  } else {
+    console.warn('All live price fetch attempts failed:', lastError?.message);
+    updateFetchStatusUI('error');
   }
 
   isPriceFetching = false;
