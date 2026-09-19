@@ -48,10 +48,12 @@ async function fetchFXRate() {
   const text = await resp.text();
   const lines = text.trim().split('\n');
   for (const line of lines) {
-    if (line.includes('USD') && line.includes('即期')) {
-      const cols = line.split(',');
-      if (cols.length >= 2) {
-        const rate = parseFloat(cols[1]);
+    if (line.includes('USD') && line.includes('Buying')) {
+      const nums = line.match(/\d+\.\d+/g);
+      // CSV: USD,Buying,Cash,Spot,Forward-10Days,...
+      // nums[0]=Cash, nums[1]=Spot
+      if (nums && nums.length >= 2) {
+        const rate = parseFloat(nums[1]);
         if (rate > 0) return rate;
       }
     }

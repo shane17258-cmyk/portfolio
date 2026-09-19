@@ -624,15 +624,13 @@ function updateStockPrice(name, value) {
 function parseBOTRate(text) {
   const lines = text.split(/\r?\n/);
   for (const line of lines) {
-    if (/(^|[^A-Z])USD([^A-Z]|$)/.test(line)) {
+    if (/(^|[^A-Z])USD([^A-Z]|$)/.test(line) && /Buying/.test(line)) {
       const nums = line.match(/\d+\.\d+/g);
-      if (nums && nums.length >= 4) {
-        const spotBuy = parseFloat(nums[2]);
+      // CSV: USD,Buying,Cash,Spot,Forward-10Days,...
+      // nums[0]=Cash, nums[1]=Spot, nums[2]=Forward-10D
+      if (nums && nums.length >= 2) {
+        const spotBuy = parseFloat(nums[1]);
         if (!isNaN(spotBuy) && spotBuy > 0) return spotBuy;
-      }
-      if (nums && nums.length > 0) {
-        const first = parseFloat(nums[0]);
-        if (!isNaN(first) && first > 0) return first;
       }
     }
   }
@@ -685,7 +683,12 @@ async function fetchFXRate() {
   }
 
   if (!succeeded) {
-    updateFxStatusUI('error');
+    // Only show error if we don't already have a recent rate from prices.json
+    if (!fxState.updatedAt) {
+      updateFxStatusUI('error');
+    } else {
+      updateFxStatusUI('success');
+    }
   }
   isFxFetching = false;
 }
