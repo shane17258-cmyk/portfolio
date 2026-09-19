@@ -1,14 +1,14 @@
 /* GlintPortfolio - Service Worker */
 
-const CACHE_VERSION = 'v22';
+const CACHE_VERSION = 'v23';
 const CACHE_NAME = `glint-portfolio-${CACHE_VERSION}`;
 
 const PRECACHE_ASSETS = [
   './',
   './index.html',
-  './styles.css?v=22',
-  './app.js?v=22',
-  './data.js?v=22',
+  './styles.css?v=23',
+  './app.js?v=23',
+  './data.js?v=23',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -17,14 +17,12 @@ const PRECACHE_ASSETS = [
   'https://cdn.jsdelivr.net/npm/chart.js'
 ];
 
-// Hosts that must always hit the network (live price / FX APIs)
+// Hosts that must always hit the network (live price / FX APIs via CORS proxy)
 const NETWORK_ONLY_HOSTS = [
   'mis.twse.com.tw',
   'corsproxy.io',
   'allorigins.win',
-  'bot.com.tw',
-  'stooq.com',
-  'query1.finance.yahoo.com'
+  'stooq.com'
 ];
 
 self.addEventListener('install', (event) => {
@@ -53,6 +51,24 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
+
+  // API proxy route: /proxy/<encoded-url> — SW fetches target (no CORS), returns to page
+  if (url.pathname.startsWith('/proxy/')) {
+    const target = decodeURIComponent(url.pathname.slice(7));
+    event.respondWith(
+      fetch(target, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        redirect: 'follow'
+      })
+      .then(resp => new Response(resp.body, {
+        status: resp.status,
+        statusText: resp.statusText,
+        headers: { 'Content-Type': resp.headers.get('Content-Type') || 'text/plain', 'Access-Control-Allow-Origin': '*' }
+      }))
+      .catch(err => new Response(JSON.stringify({ error: err.message }), { status: 502, headers: { 'Content-Type': 'application/json' } }))
+    );
+    return;
+  }
 
   // Live price API calls: never cache, let browser handle network
   const isNetworkOnly = NETWORK_ONLY_HOSTS.some((host) => url.hostname.includes(host));

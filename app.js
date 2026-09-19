@@ -611,6 +611,7 @@ async function fetchFXRate() {
 
   const BOT_URL = 'https://rate.bot.com.tw/xrt/flcsv/0/day';
   const PROXY_URLS = [
+    `/proxy/${encodeURIComponent(BOT_URL)}`,
     `https://corsproxy.io/?url=${encodeURIComponent(BOT_URL)}`,
     `https://api.allorigins.win/raw?url=${encodeURIComponent(BOT_URL)}`
   ];
@@ -708,7 +709,7 @@ async function fetchUSPrices() {
       const timeoutId = setTimeout(() => controller.abort(), 8000);
       try {
         const resp = await fetch(
-          `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`,
+          `/proxy/${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`)}`,
           { signal: controller.signal }
         );
         clearTimeout(timeoutId);
@@ -1790,7 +1791,7 @@ async function fetchLivePrices() {
       const timeoutId = setTimeout(() => controller.abort(), 8000);
       try {
         const resp = await fetch(
-          `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`,
+          `/proxy/${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`)}`,
           { signal: controller.signal }
         );
         clearTimeout(timeoutId);
