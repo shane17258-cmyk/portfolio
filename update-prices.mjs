@@ -12,7 +12,7 @@ const TW_STOCKS = {
 
 const US_STOCKS = {
   "Palantir": "PLTR",
-  "Invesco QQQ": "QQQ",
+  "Invesco QQQ": "QQQM",
   "Tesla": "TSLA",
   "Vanguard VTI": "VTI",
   "Vanguard VXUS": "VXUS",

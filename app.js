@@ -34,7 +34,7 @@ const DEFAULT_PRICES = {
 // 玉山＋台新複委託持倉快照 (USD; usdCost = 市值 - 截圖庫存損益)
 const FOREIGN_HOLDINGS = [
   { name: "Palantir",      ticker: "PLTR", broker: "玉山", shares: 3,      usdCost: 432.2 },
-  { name: "Invesco QQQ",   ticker: "QQQ",  broker: "玉山", shares: 26,     usdCost: 7681.72 },
+  { name: "Invesco QQQ",   ticker: "QQQM", broker: "玉山", shares: 26,     usdCost: 7681.72 },
   { name: "Tesla",         ticker: "TSLA", broker: "玉山", shares: 3,      usdCost: 537.81 },
   { name: "Vanguard VTI",  ticker: "VTI",  broker: "玉山", shares: 51,     usdCost: 14500.05 },
   { name: "Vanguard VXUS", ticker: "VXUS", broker: "玉山", shares: 36,     usdCost: 2930.62 },
@@ -90,7 +90,7 @@ const STOCK_CODES = {
   "富邦NASDAQ": "00662",
   "元大台灣50正2": "00631L",
   "Palantir": "PLTR",
-  "Invesco QQQ": "QQQ",
+  "Invesco QQQ": "QQQM",
   "Tesla": "TSLA",
   "Vanguard VTI": "VTI",
   "Vanguard VXUS": "VXUS",
@@ -707,22 +707,6 @@ function updateFxStatusUI(status) {
 
 // ─── US Stock Prices (Yahoo Finance primary, Stooq fallback) ────────────────
 
-const FOREIGN_YAHOO_MAP = {
-  "Palantir":     "PLTR",
-  "Invesco QQQ":  "QQQ",
-  "Tesla":        "TSLA",
-  "Vanguard VTI": "VTI",
-  "Vanguard VXUS":"VXUS",
-  "Nvidia":       "NVDA",
-  "Vanguard VOO": "VOO",
-  "永豐 TLT":     "TLT",
-  "永豐 VTI":     "VTI",
-  "永豐 VXUS":    "VXUS",
-  "國泰 DRAM":    "DRAM",
-  "國泰 QQQ":     "QQQ",
-  "國泰 VXUS":    "VXUS"
-};
-
 function parseStooqCSV(text) {
   const result = {};
   const lines = text.trim().split(/\r?\n/);
@@ -740,15 +724,21 @@ async function fetchUSPrices() {
   if (isUSFetching) return;
   isUSFetching = true;
 
-  // --- Strategy 1: Yahoo Finance (no proxy needed) ---
+  // --- Strategy 1: Yahoo Finance via SW proxy (uses ticker from each holding) ---
   let updatedCount = 0;
   let lastError = null;
 
-  const yahooNames = [...new Set(FOREIGN_HOLDINGS.map(f => f.name))];
+  // Deduplicate by ticker so each unique ticker is fetched once
+  const seen = new Set();
+  const uniqueHoldings = FOREIGN_HOLDINGS.filter(f => {
+    if (seen.has(f.ticker)) return false;
+    seen.add(f.ticker);
+    return true;
+  });
+
   const yahooResults = await Promise.allSettled(
-    yahooNames.map(async name => {
-      const symbol = FOREIGN_YAHOO_MAP[name];
-      if (!symbol) return;
+    uniqueHoldings.map(async f => {
+      const symbol = f.ticker;
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 8000);
       try {
@@ -763,7 +753,8 @@ async function fetchUSPrices() {
         if (!meta) throw new Error('No chart data');
         const price = meta.regularMarketPrice || meta.fulldayPrice;
         if (price && price > 0) {
-          prices[name] = price;
+          // Update all holdings with this ticker
+          FOREIGN_HOLDINGS.forEach(h => { if (h.ticker === symbol) prices[h.name] = price; });
           updatedCount++;
         }
       } catch (err) {
@@ -784,7 +775,7 @@ async function fetchUSPrices() {
 
   // --- Strategy 2: Stooq via CORS proxies (fallback) ---
   console.warn('Yahoo Finance failed for US stocks, trying Stooq...');
-  const symbols = FOREIGN_HOLDINGS.map(f => `${STOCK_CODES[f.name].toLowerCase()}.us`).join(',');
+  const symbols = FOREIGN_HOLDINGS.map(f => `${f.ticker.toLowerCase()}.us`).join(',');
   const STOOQ_URL = `https://stooq.com/q/l/?s=${symbols}&f=sd2t2ohlcv&h&e=csv`;
   const PROXY_URLS = [
     `https://api.allorigins.win/raw?url=${encodeURIComponent(STOOQ_URL)}`,
