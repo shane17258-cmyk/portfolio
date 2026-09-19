@@ -112,6 +112,16 @@ function getStockDisplayName(name) {
 
 // Initialize Application
 document.addEventListener("DOMContentLoaded", () => {
+  // Force reload if deployed version is newer (SW may still serve old code)
+  const APP_VERSION = 'v24';
+  const savedVer = localStorage.getItem('portfolio_app_version');
+  if (savedVer && savedVer !== APP_VERSION) {
+    localStorage.setItem('portfolio_app_version', APP_VERSION);
+    location.reload();
+    return;
+  }
+  localStorage.setItem('portfolio_app_version', APP_VERSION);
+
   loadData();
   initEventListeners();
   renderApp();
