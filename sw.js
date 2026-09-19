@@ -1,19 +1,20 @@
 /* GlintPortfolio - Service Worker */
 
-const CACHE_VERSION = 'v25';
+const CACHE_VERSION = 'v26';
 const CACHE_NAME = `glint-portfolio-${CACHE_VERSION}`;
 
 const PRECACHE_ASSETS = [
   './',
   './index.html',
-  './styles.css?v=25',
-  './app.js?v=25',
-  './data.js?v=25',
+  './styles.css?v=26',
+  './app.js?v=26',
+  './data.js?v=26',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
   './icons/favicon-32.png',
+  './prices.json',
   'https://cdn.jsdelivr.net/npm/chart.js'
 ];
 
@@ -75,6 +76,11 @@ self.addEventListener('fetch', (event) => {
       .catch(err => new Response(JSON.stringify({ error: err.message }), { status: 502, headers: { 'Content-Type': 'application/json' } }))
     );
     return;
+  }
+
+  // prices.json: always fetch fresh (app requests with cache:'no-store')
+  if (url.pathname.endsWith('/prices.json') || url.pathname.includes('/prices.json?')) {
+    return; // let browser handle directly, bypass SW cache
   }
 
   // Live price API calls: never cache, let browser handle network

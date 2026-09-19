@@ -113,11 +113,10 @@ function getStockDisplayName(name) {
 // Initialize Application
 document.addEventListener("DOMContentLoaded", () => {
   // Force cache clear when version changes (ensures new SW takes over)
-  const APP_VERSION = 'v25';
+  const APP_VERSION = 'v26';
   const savedVer = localStorage.getItem('portfolio_app_version');
   if (savedVer !== APP_VERSION) {
     localStorage.setItem('portfolio_app_version', APP_VERSION);
-    // Clear all SW caches so new SW precaches fresh files
     if ('caches' in window) {
       caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => {
         if (navigator.serviceWorker?.controller) {
@@ -141,12 +140,40 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('live-price-indicator').textContent = '⚠️';
   }
 
-  // Fetch live prices on startup and start auto-refresh
+  // 1) Load from prices.json (same-origin, guaranteed to work)
+  fetchPricesJSON();
+  // 2) Then try live fetches for real-time updates (bonus)
   fetchLivePrices();
   fetchUSPrices();
   fetchFXRate();
   startPriceAutoRefresh();
 });
+
+/**
+ * Fetch prices.json from same origin (no CORS). Instantly updates all prices + FX.
+ * This is the primary price source — always reliable.
+ */
+async function fetchPricesJSON() {
+  try {
+    const resp = await fetch(`prices.json?v=${Date.now()}`, { cache: 'no-store' });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (data.prices) {
+      Object.assign(prices, data.prices);
+      savePricesToLocalStorage();
+    }
+    if (data.fxRate && data.fxRate > 0) {
+      fxState = { rate: data.fxRate, updatedAt: data.updatedAt, source: '台銀即期買入' };
+      saveFxToLocalStorage();
+    }
+    renderApp();
+    const time = data.updatedAt ? new Date(data.updatedAt) : null;
+    const timeStr = time ? `${time.getMonth()+1}/${time.getDate()} ${formatTime(time)}` : '';
+    showToast(`已從 prices.json 載入現價${timeStr ? ' (' + timeStr + ')' : ''}`, 'success');
+  } catch (e) {
+    console.warn('prices.json fetch failed:', e.message);
+  }
+}
 
 // Load data from LocalStorage or fall back to defaults
 function loadData() {
