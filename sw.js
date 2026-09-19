@@ -1,14 +1,14 @@
 /* GlintPortfolio - Service Worker */
 
-const CACHE_VERSION = 'v24';
+const CACHE_VERSION = 'v25';
 const CACHE_NAME = `glint-portfolio-${CACHE_VERSION}`;
 
 const PRECACHE_ASSETS = [
   './',
   './index.html',
-  './styles.css?v=24',
-  './app.js?v=24',
-  './data.js?v=24',
+  './styles.css?v=25',
+  './app.js?v=25',
+  './data.js?v=25',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -44,6 +44,13 @@ self.addEventListener('activate', (event) => {
       ))
       .then(() => self.clients.claim())
   );
+});
+
+// Allow page to force-activate new SW immediately
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', (event) => {

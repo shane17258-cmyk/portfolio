@@ -112,15 +112,22 @@ function getStockDisplayName(name) {
 
 // Initialize Application
 document.addEventListener("DOMContentLoaded", () => {
-  // Force reload if deployed version is newer (SW may still serve old code)
-  const APP_VERSION = 'v24';
+  // Force cache clear when version changes (ensures new SW takes over)
+  const APP_VERSION = 'v25';
   const savedVer = localStorage.getItem('portfolio_app_version');
-  if (savedVer && savedVer !== APP_VERSION) {
+  if (savedVer !== APP_VERSION) {
     localStorage.setItem('portfolio_app_version', APP_VERSION);
-    location.reload();
+    // Clear all SW caches so new SW precaches fresh files
+    if ('caches' in window) {
+      caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => {
+        if (navigator.serviceWorker?.controller) {
+          navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+        }
+        location.reload();
+      });
+    }
     return;
   }
-  localStorage.setItem('portfolio_app_version', APP_VERSION);
 
   loadData();
   initEventListeners();
