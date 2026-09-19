@@ -16,19 +16,19 @@ const DEFAULT_PRICES = {
   "元大S&P500": 76.60,
   "富邦NASDAQ": 120.50,
   "元大台灣50正2": 37.65,
-  "Palantir": 184.9,
-  "Invesco QQQ": 293.69,
-  "Tesla": 379.22,
-  "Vanguard VTI": 378.73,
-  "Vanguard VXUS": 87.44,
-  "Nvidia": 226.72,
-  "Vanguard VOO": 706.3637,
-  "永豐 TLT": 82.28,
-  "永豐 VTI": 378.66,
-  "永豐 VXUS": 87.51,
-  "國泰 DRAM": 59.10,
-  "國泰 QQQ": 714.88,
-  "國泰 VXUS": 87.14
+  "Palantir": 177.64,
+  "Invesco QQQ": 721.45,
+  "Tesla": 364.27,
+  "Vanguard VTI": 375.43,
+  "Vanguard VXUS": 85.88,
+  "Nvidia": 222.27,
+  "Vanguard VOO": 701.78,
+  "永豐 TLT": 81.25,
+  "永豐 VTI": 375.43,
+  "永豐 VXUS": 85.88,
+  "國泰 DRAM": 59.61,
+  "國泰 QQQ": 721.45,
+  "國泰 VXUS": 85.88
 };
 
 // 玉山＋台新複委託持倉快照 (USD; usdCost = 市值 - 截圖庫存損益)
@@ -660,7 +660,23 @@ function updateFxStatusUI(status) {
   }
 }
 
-// ─── US Stock Prices from Stooq (free EOD/delayed quotes) ────────────────────
+// ─── US Stock Prices (Yahoo Finance primary, Stooq fallback) ────────────────
+
+const FOREIGN_YAHOO_MAP = {
+  "Palantir":     "PLTR",
+  "Invesco QQQ":  "QQQ",
+  "Tesla":        "TSLA",
+  "Vanguard VTI": "VTI",
+  "Vanguard VXUS":"VXUS",
+  "Nvidia":       "NVDA",
+  "Vanguard VOO": "VOO",
+  "永豐 TLT":     "TLT",
+  "永豐 VTI":     "VTI",
+  "永豐 VXUS":    "VXUS",
+  "國泰 DRAM":    "DRAM",
+  "國泰 QQQ":     "QQQ",
+  "國泰 VXUS":    "VXUS"
+};
 
 function parseStooqCSV(text) {
   const result = {};
@@ -679,11 +695,55 @@ async function fetchUSPrices() {
   if (isUSFetching) return;
   isUSFetching = true;
 
+  // --- Strategy 1: Yahoo Finance (no proxy needed) ---
+  let updatedCount = 0;
+  let lastError = null;
+
+  const yahooNames = [...new Set(FOREIGN_HOLDINGS.map(f => f.name))];
+  const yahooResults = await Promise.allSettled(
+    yahooNames.map(async name => {
+      const symbol = FOREIGN_YAHOO_MAP[name];
+      if (!symbol) return;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      try {
+        const resp = await fetch(
+          `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`,
+          { signal: controller.signal }
+        );
+        clearTimeout(timeoutId);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        const meta = data?.chart?.result?.[0]?.meta;
+        if (!meta) throw new Error('No chart data');
+        const price = meta.regularMarketPrice || meta.fulldayPrice;
+        if (price && price > 0) {
+          prices[name] = price;
+          updatedCount++;
+        }
+      } catch (err) {
+        clearTimeout(timeoutId);
+        console.warn(`Yahoo US ${symbol} failed:`, err.message);
+        lastError = err;
+      }
+    })
+  );
+
+  if (updatedCount > 0) {
+    savePricesToLocalStorage();
+    renderApp();
+    showToast(`已更新 ${updatedCount} 檔美股現價 (Yahoo Finance)`, 'success');
+    isUSFetching = false;
+    return;
+  }
+
+  // --- Strategy 2: Stooq via CORS proxies (fallback) ---
+  console.warn('Yahoo Finance failed for US stocks, trying Stooq...');
   const symbols = FOREIGN_HOLDINGS.map(f => `${STOCK_CODES[f.name].toLowerCase()}.us`).join(',');
   const STOOQ_URL = `https://stooq.com/q/l/?s=${symbols}&f=sd2t2ohlcv&h&e=csv`;
   const PROXY_URLS = [
-    `https://corsproxy.io/?url=${encodeURIComponent(STOOQ_URL)}`,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(STOOQ_URL)}`
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(STOOQ_URL)}`,
+    `https://corsproxy.io/?url=${encodeURIComponent(STOOQ_URL)}`
   ];
 
   for (const proxyUrl of PROXY_URLS) {
@@ -695,7 +755,7 @@ async function fetchUSPrices() {
       if (!resp.ok) continue;
       const quotes = parseStooqCSV(await resp.text());
 
-      let updatedCount = 0;
+      updatedCount = 0;
       FOREIGN_HOLDINGS.forEach(f => {
         const key = `${STOCK_CODES[f.name].toLowerCase()}.us`;
         if (quotes[key] > 0) {
@@ -712,7 +772,7 @@ async function fetchUSPrices() {
         return;
       }
     } catch (err) {
-      console.warn('US price proxy failed:', err.message);
+      console.warn('Stooq proxy failed:', err.message);
     }
   }
 
