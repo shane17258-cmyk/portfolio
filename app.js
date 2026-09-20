@@ -141,11 +141,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // 1) Load from prices.json (same-origin, guaranteed to work)
-  fetchPricesJSON();
+  const fxLoaded = fetchPricesJSON();
   // 2) Then try live fetches for real-time updates (bonus)
   fetchLivePrices();
   fetchUSPrices();
-  fetchFXRate();
+  fxLoaded.then(ok => { if (!ok) fetchFXRate(); });
   startPriceAutoRefresh();
 });
 
@@ -154,9 +154,10 @@ document.addEventListener("DOMContentLoaded", () => {
  * This is the primary price source — always reliable.
  */
 async function fetchPricesJSON() {
+  let fxFound = false;
   try {
     const resp = await fetch(`prices.json?v=${Date.now()}`, { cache: 'no-store' });
-    if (!resp.ok) return;
+    if (!resp.ok) return fxFound;
     const data = await resp.json();
     if (data.prices) {
       Object.assign(prices, data.prices);
@@ -165,6 +166,7 @@ async function fetchPricesJSON() {
     if (data.fxRate && data.fxRate > 0) {
       fxState = { rate: data.fxRate, updatedAt: data.updatedAt, source: '台銀即期買入' };
       saveFxToLocalStorage();
+      fxFound = true;
     }
     renderApp();
     const time = data.updatedAt ? new Date(data.updatedAt) : null;
@@ -173,6 +175,7 @@ async function fetchPricesJSON() {
   } catch (e) {
     console.warn('prices.json fetch failed:', e.message);
   }
+  return fxFound;
 }
 
 // Load data from LocalStorage or fall back to defaults
