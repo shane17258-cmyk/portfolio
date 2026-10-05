@@ -11,24 +11,24 @@ let fxState = { rate: 31.76, updatedAt: null, source: '預設' };
 
 // Default prices (last transaction prices as starting points; foreign = USD)
 const DEFAULT_PRICES = {
-  "元大台灣50": 109.85,
-  "富邦台50": 251.20,
-  "元大S&P500": 76.60,
-  "富邦NASDAQ": 120.50,
-  "元大台灣50正2": 37.65,
-  "Palantir": 177.64,
-  "Invesco QQQ": 721.45,
-  "Tesla": 364.27,
-  "Vanguard VTI": 375.43,
-  "Vanguard VXUS": 85.88,
-  "Nvidia": 222.27,
-  "Vanguard VOO": 701.78,
-  "永豐 TLT": 81.25,
-  "永豐 VTI": 375.43,
-  "永豐 VXUS": 85.88,
-  "國泰 DRAM": 59.61,
-  "國泰 QQQ": 721.45,
-  "國泰 VXUS": 85.88
+  "元大台灣50": 115.95,
+  "富邦台50": 265.35,
+  "元大S&P500": 77.25,
+  "富邦NASDAQ": 125.8,
+  "元大台灣50正2": 41.54,
+  "Palantir": 188.21,
+  "Invesco QQQ": 310.45,
+  "Tesla": 377.58,
+  "Vanguard VTI": 379.6,
+  "Vanguard VXUS": 85.71,
+  "Nvidia": 237.29,
+  "Vanguard VOO": 710.27,
+  "永豐 TLT": 76.93,
+  "永豐 VTI": 379.6,
+  "永豐 VXUS": 85.71,
+  "國泰 DRAM": 61.92,
+  "國泰 QQQ": 753.92,
+  "國泰 VXUS": 85.71
 };
 
 // 玉山＋台新複委託持倉快照 (USD; usdCost = 市值 - 截圖庫存損益)
@@ -113,7 +113,7 @@ function getStockDisplayName(name) {
 // Initialize Application
 document.addEventListener("DOMContentLoaded", () => {
   // Force cache clear when version changes (ensures new SW takes over)
-  const APP_VERSION = 'v26';
+  const APP_VERSION = 'v27';
   const savedVer = localStorage.getItem('portfolio_app_version');
   if (savedVer !== APP_VERSION) {
     localStorage.setItem('portfolio_app_version', APP_VERSION);
