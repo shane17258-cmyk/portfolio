@@ -118,7 +118,7 @@ function getStockDisplayName(name) {
 // Initialize Application
 document.addEventListener("DOMContentLoaded", () => {
   // Force cache clear when version changes (ensures new SW takes over)
-  const APP_VERSION = 'v28';
+  const APP_VERSION = 'v29';
   const savedVer = localStorage.getItem('portfolio_app_version');
   if (savedVer !== APP_VERSION) {
     localStorage.setItem('portfolio_app_version', APP_VERSION);
@@ -1883,11 +1883,13 @@ function renderBalanceSheet() {
   setText("liability-loan-display", formatCurrency(loanInfo.currentBalance));
   setText("liability-total-display", formatCurrency(totalLiabilities));
 
-  const netEl = document.getElementById("net-worth-display");
-  if (netEl) {
-    netEl.innerText = formatCurrencyWithSign(netWorth);
-    netEl.style.color = netWorth >= 0 ? 'var(--secondary)' : '#ef4444';
+  const netTopEl = document.getElementById("net-worth-top-value");
+  if (netTopEl) {
+    netTopEl.innerText = formatCurrencyWithSign(netWorth);
+    netTopEl.className = `card-value-display ${netWorth >= 0 ? 'text-profit' : 'text-loss'}`;
   }
+  setText("net-worth-assets-breakdown", `資產: ${formatCurrency(totalAssets)}`);
+  setText("net-worth-liab-breakdown", `負債: ${formatCurrency(totalLiabilities)}`);
 
   // Refresh input values only when user is not editing them
   BANKS.forEach(bank => {
