@@ -1,14 +1,14 @@
 /* GlintPortfolio - Service Worker */
 
-const CACHE_VERSION = 'v27';
+const CACHE_VERSION = 'v28';
 const CACHE_NAME = `glint-portfolio-${CACHE_VERSION}`;
 
 const PRECACHE_ASSETS = [
   './',
   './index.html',
-  './styles.css?v=27',
-  './app.js?v=27',
-  './data.js?v=27',
+  './styles.css?v=28',
+  './app.js?v=28',
+  './data.js?v=28',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',

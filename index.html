@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="GlintPortfolio">
   <!-- Google Font & Style sheets -->
-  <link rel="stylesheet" href="styles.css?v=27">
+  <link rel="stylesheet" href="styles.css?v=28">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -291,6 +291,54 @@
             </div>
           </div>
         </div>
+
+        <!-- Assets & Liabilities Card -->
+        <div class="card">
+          <h3 class="section-title" style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">💰 資產與負債</h3>
+
+          <h4 style="font-size: 13px; margin: 12px 0 8px;">資產</h4>
+          <div style="padding: 12px; background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--border-color); border-radius: var(--radius-md); font-size: 12px;">
+            <div class="calc-preview-row">
+              <span>當前總市值 (含複委託):</span>
+              <span id="asset-market-value" style="font-weight: 600;">NT$ 0</span>
+            </div>
+            <div class="calc-preview-row">
+              <span>銀行餘額小計:</span>
+              <span id="bank-total-display" style="font-weight: 600; color: var(--secondary);">NT$ 0</span>
+            </div>
+            <div class="calc-preview-row" style="border-top: 1px solid var(--border-color); padding-top: 8px; margin-top: 4px;">
+              <span>資產總額:</span>
+              <span id="asset-total-display" style="font-weight: 700;">NT$ 0</span>
+            </div>
+          </div>
+
+          <div id="bank-inputs-container" class="price-inputs" style="margin-top: 12px;">
+            <!-- Javascript will populate bank balance inputs -->
+          </div>
+
+          <h4 style="font-size: 13px; margin: 16px 0 8px;">負債</h4>
+          <div class="price-inputs">
+            <div class="form-group">
+              <label class="form-label" for="pledge-amount-input">股票質押金額</label>
+              <input type="number" id="pledge-amount-input" class="form-control" value="0" min="0" step="1" onchange="updatePledgeAmount(this.value)">
+            </div>
+          </div>
+          <div style="margin-top: 10px; padding: 12px; background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--border-color); border-radius: var(--radius-md); font-size: 12px;">
+            <div class="calc-preview-row">
+              <span>信貸餘額:</span>
+              <span id="liability-loan-display" style="font-weight: 600;">NT$ 0</span>
+            </div>
+            <div class="calc-preview-row" style="border-top: 1px solid var(--border-color); padding-top: 8px; margin-top: 4px;">
+              <span>負債總額 (信貸 + 質押):</span>
+              <span id="liability-total-display" style="font-weight: 700;">NT$ 0</span>
+            </div>
+          </div>
+
+          <div style="margin-top: 10px; padding: 12px; background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-md); font-size: 13px; display: flex; justify-content: space-between; align-items: center;">
+            <span>淨資產 (資產 − 負債):</span>
+            <span id="net-worth-display" style="font-weight: 700; font-size: 15px;">NT$ 0</span>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -438,14 +486,14 @@
   <div id="toast-container" class="toast-container"></div>
 
   <!-- Import application script files -->
-  <script src="data.js?v=27"></script>
-  <script src="app.js?v=27"></script>
+  <script src="data.js?v=28"></script>
+  <script src="app.js?v=28"></script>
 
   <!-- Register Service Worker for PWA (offline support + auto-update) -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=27')
+        navigator.serviceWorker.register('sw.js?v=28')
           .then(reg => {
             console.log('Service Worker registered');
             // Poll for updates: Android/iOS PWA otherwise stays on old version until closed

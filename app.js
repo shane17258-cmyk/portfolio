@@ -8,6 +8,11 @@ let stockHoldings = {};
 let loanConfig = {};
 let foreignHoldings = [];
 let fxState = { rate: 31.76, updatedAt: null, source: '預設' };
+let bankBalances = {};
+let pledgeAmount = 0;
+
+// Bank list for manual balance input (資產-銀行餘額)
+const BANKS = ["玉山", "台新", "永豐", "上海", "台企銀", "元大", "聯邦", "華南", "台銀", "國泰世華"];
 
 // Default prices (last transaction prices as starting points; foreign = USD)
 const DEFAULT_PRICES = {
@@ -113,7 +118,7 @@ function getStockDisplayName(name) {
 // Initialize Application
 document.addEventListener("DOMContentLoaded", () => {
   // Force cache clear when version changes (ensures new SW takes over)
-  const APP_VERSION = 'v27';
+  const APP_VERSION = 'v28';
   const savedVer = localStorage.getItem('portfolio_app_version');
   if (savedVer !== APP_VERSION) {
     localStorage.setItem('portfolio_app_version', APP_VERSION);
@@ -130,6 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadData();
   initEventListeners();
+  initBalanceSheetInputs();
   renderApp();
 
   // Detect file:// protocol and warn user
@@ -195,9 +201,14 @@ function loadData() {
       monthlyDeduction: 22000,
       deductionDay: 2
     };
+    bankBalances = {};
+    BANKS.forEach(b => { bankBalances[b] = 0; });
+    pledgeAmount = 0;
     saveTransactionsToLocalStorage();
     savePricesToLocalStorage();
     saveLoanConfigToLocalStorage();
+    saveBankBalancesToLocalStorage();
+    savePledgeAmountToLocalStorage();
     localStorage.setItem("portfolio_data_version", String(DATA_VERSION));
     return;
   }
@@ -244,6 +255,26 @@ function loadData() {
   });
   if (priceMigrated) savePricesToLocalStorage();
 
+  // Load bank balances (manual input; default 0 for missing banks)
+  let bankMigrated = false;
+  try {
+    const savedBanks = localStorage.getItem("portfolio_bank_balances");
+    bankBalances = savedBanks ? JSON.parse(savedBanks) : {};
+  } catch (e) { bankBalances = {}; }
+  BANKS.forEach(b => {
+    if (typeof bankBalances[b] !== 'number' || isNaN(bankBalances[b])) {
+      bankBalances[b] = 0;
+      bankMigrated = true;
+    }
+  });
+  if (bankMigrated) saveBankBalancesToLocalStorage();
+
+  // Load stock pledge amount (manual input)
+  try {
+    const savedPledge = localStorage.getItem("portfolio_pledge_amount");
+    pledgeAmount = savedPledge ? (parseFloat(savedPledge) || 0) : 0;
+  } catch (e) { pledgeAmount = 0; }
+
   // Load saved FX rate
   try {
     const savedFx = localStorage.getItem("portfolio_fx_rate");
@@ -268,6 +299,14 @@ function saveLoanConfigToLocalStorage() {
 
 function saveFxToLocalStorage() {
   localStorage.setItem("portfolio_fx_rate", JSON.stringify(fxState));
+}
+
+function saveBankBalancesToLocalStorage() {
+  localStorage.setItem("portfolio_bank_balances", JSON.stringify(bankBalances));
+}
+
+function savePledgeAmountToLocalStorage() {
+  localStorage.setItem("portfolio_pledge_amount", String(pledgeAmount));
 }
 
 // Calculate portfolio metrics chronologically
@@ -433,6 +472,7 @@ function renderApp() {
   renderPriceInputs();
   renderForeignHoldings();
   renderLoanInputs();
+  renderBalanceSheet();
   renderTransactionsTable();
   renderCharts();
 }
@@ -1605,7 +1645,9 @@ function exportData() {
     transactions,
     prices,
     loanConfig,
-    fxState
+    fxState,
+    bankBalances,
+    pledgeAmount
   };
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup));
   const downloadAnchor = document.createElement('a');
@@ -1640,7 +1682,19 @@ function importData(event) {
           fxState = imported.fxState;
           saveFxToLocalStorage();
         }
-        
+        if (imported.bankBalances && typeof imported.bankBalances === 'object') {
+          bankBalances = imported.bankBalances;
+          BANKS.forEach(b => {
+            if (typeof bankBalances[b] !== 'number' || isNaN(bankBalances[b])) bankBalances[b] = 0;
+          });
+          saveBankBalancesToLocalStorage();
+          initBalanceSheetInputs();
+        }
+        if (typeof imported.pledgeAmount === 'number') {
+          pledgeAmount = Math.max(0, imported.pledgeAmount);
+          savePledgeAmountToLocalStorage();
+        }
+
         saveTransactionsToLocalStorage();
         savePricesToLocalStorage();
         renderApp();
@@ -1772,6 +1826,82 @@ function updateLoanConfig(key, value) {
   saveLoanConfigToLocalStorage();
   renderApp();
   showToast("信貸與槓桿參數已更新", "success");
+}
+
+// ─── Assets & Liabilities (資產與負債) ─────────────────────────────
+
+// Build bank balance inputs once on startup
+function initBalanceSheetInputs() {
+  const container = document.getElementById("bank-inputs-container");
+  if (!container) return;
+  container.innerHTML = "";
+  BANKS.forEach(bank => {
+    const group = document.createElement("div");
+    group.className = "form-group";
+    group.innerHTML = `
+      <label class="form-label" for="bank-input-${bank}">${bank}</label>
+      <input type="number" id="bank-input-${bank}" class="form-control" value="${bankBalances[bank] || 0}" min="0" step="1" onchange="updateBankBalance('${bank}', this.value)">`;
+    container.appendChild(group);
+  });
+  const pledgeEl = document.getElementById("pledge-amount-input");
+  if (pledgeEl) pledgeEl.value = pledgeAmount || 0;
+}
+
+function updateBankBalance(bank, value) {
+  bankBalances[bank] = Math.max(0, parseFloat(value) || 0);
+  saveBankBalancesToLocalStorage();
+  renderApp();
+}
+
+function updatePledgeAmount(value) {
+  pledgeAmount = Math.max(0, parseFloat(value) || 0);
+  savePledgeAmountToLocalStorage();
+  renderApp();
+  showToast("股票質押金額已更新", "success");
+}
+
+// Render assets & liabilities card
+function renderBalanceSheet() {
+  // 資產 = 當前總市值(含複委託) + 銀行餘額總和
+  const totalValue = portfolioSummary.totalValue || 0;
+  const bankTotal = BANKS.reduce((sum, b) => sum + (bankBalances[b] || 0), 0);
+  const totalAssets = totalValue + bankTotal;
+
+  // 負債 = 信貸餘額 + 股票質押金額
+  const loanInfo = calculateLoanBalance();
+  const totalLiabilities = loanInfo.currentBalance + (pledgeAmount || 0);
+  const netWorth = totalAssets - totalLiabilities;
+
+  const setText = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = text;
+  };
+
+  setText("asset-market-value", formatCurrency(totalValue));
+  setText("bank-total-display", formatCurrency(bankTotal));
+  setText("asset-total-display", formatCurrency(totalAssets));
+  setText("liability-loan-display", formatCurrency(loanInfo.currentBalance));
+  setText("liability-total-display", formatCurrency(totalLiabilities));
+
+  const netEl = document.getElementById("net-worth-display");
+  if (netEl) {
+    netEl.innerText = formatCurrencyWithSign(netWorth);
+    netEl.style.color = netWorth >= 0 ? 'var(--secondary)' : '#ef4444';
+  }
+
+  // Refresh input values only when user is not editing them
+  BANKS.forEach(bank => {
+    const el = document.getElementById(`bank-input-${bank}`);
+    if (el && document.activeElement !== el) {
+      const v = String(bankBalances[bank] || 0);
+      if (el.value !== v) el.value = v;
+    }
+  });
+  const pledgeEl = document.getElementById("pledge-amount-input");
+  if (pledgeEl && document.activeElement !== pledgeEl) {
+    const v = String(pledgeAmount || 0);
+    if (pledgeEl.value !== v) pledgeEl.value = v;
+  }
 }
 
 
