@@ -118,7 +118,7 @@ function getStockDisplayName(name) {
 // Initialize Application
 document.addEventListener("DOMContentLoaded", () => {
   // Force cache clear when version changes (ensures new SW takes over)
-  const APP_VERSION = 'v29';
+  const APP_VERSION = 'v30';
   const savedVer = localStorage.getItem('portfolio_app_version');
   if (savedVer !== APP_VERSION) {
     localStorage.setItem('portfolio_app_version', APP_VERSION);
@@ -135,8 +135,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadData();
   initEventListeners();
+  const synced = applySyncHash();
   initBalanceSheetInputs();
   renderApp();
+  if (synced) showToast("已從同步連結帶入銀行餘額與質押金額", "success");
 
   // Detect file:// protocol and warn user
   if (location.protocol === 'file:') {
@@ -1858,6 +1860,50 @@ function updatePledgeAmount(value) {
   savePledgeAmountToLocalStorage();
   renderApp();
   showToast("股票質押金額已更新", "success");
+}
+
+// ─── Cross-device sync via link hash (只含銀行餘額+質押金額，不經伺服器) ──
+function generateSyncLink() {
+  const payload = { v: 1, bankBalances, pledgeAmount };
+  const json = JSON.stringify(payload);
+  const b64 = btoa(unescape(encodeURIComponent(json)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const url = `${location.origin}${location.pathname}#sync=${b64}`;
+  const out = document.getElementById("sync-link-output");
+  if (out) { out.value = url; out.focus(); out.select(); }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(
+      () => showToast("同步連結已複製，用 LINE 傳給自己再用手機開啟", "success"),
+      () => showToast("連結已產生，請長按複製下方欄位", "success")
+    );
+  } else {
+    showToast("連結已產生，請長按複製下方欄位", "success");
+  }
+}
+
+function applySyncHash() {
+  if (!location.hash || location.hash.indexOf("#sync=") !== 0) return false;
+  try {
+    let b64 = location.hash.slice(6).replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    const data = JSON.parse(decodeURIComponent(escape(atob(b64))));
+    if (data && typeof data.bankBalances === 'object') {
+      bankBalances = data.bankBalances;
+      BANKS.forEach(b => {
+        if (typeof bankBalances[b] !== 'number' || isNaN(bankBalances[b])) bankBalances[b] = 0;
+      });
+      saveBankBalancesToLocalStorage();
+    }
+    if (data && typeof data.pledgeAmount === 'number') {
+      pledgeAmount = Math.max(0, data.pledgeAmount);
+      savePledgeAmountToLocalStorage();
+    }
+    history.replaceState(null, '', location.pathname + location.search);
+    return true;
+  } catch (e) {
+    console.warn('sync link decode failed:', e.message);
+    return false;
+  }
 }
 
 // Render assets & liabilities card
