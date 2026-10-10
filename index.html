@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="GlintPortfolio">
   <!-- Google Font & Style sheets -->
-  <link rel="stylesheet" href="styles.css?v=30">
+  <link rel="stylesheet" href="styles.css?v=31">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -364,7 +364,7 @@
     <div class="history-section">
       <div class="section-title-bar">
         <h3 class="section-title">📜 歷史交易明細對帳單</h3>
-        <span style="font-size: 12px; color: var(--text-muted);" id="tx-count-display">共計 59 筆對帳紀錄</span>
+        <span style="font-size: 12px; color: var(--text-muted);" id="tx-count-display">共計 63 筆對帳紀錄</span>
       </div>
 
       <!-- Filters & Search Bar -->
@@ -503,14 +503,14 @@
   <div id="toast-container" class="toast-container"></div>
 
   <!-- Import application script files -->
-  <script src="data.js?v=30"></script>
-  <script src="app.js?v=30"></script>
+  <script src="data.js?v=31"></script>
+  <script src="app.js?v=31"></script>
 
   <!-- Register Service Worker for PWA (offline support + auto-update) -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=30')
+        navigator.serviceWorker.register('sw.js?v=31')
           .then(reg => {
             console.log('Service Worker registered');
             // Poll for updates: Android/iOS PWA otherwise stays on old version until closed

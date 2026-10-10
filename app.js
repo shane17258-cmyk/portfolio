@@ -118,7 +118,7 @@ function getStockDisplayName(name) {
 // Initialize Application
 document.addEventListener("DOMContentLoaded", () => {
   // Force cache clear when version changes (ensures new SW takes over)
-  const APP_VERSION = 'v30';
+  const APP_VERSION = 'v31';
   const savedVer = localStorage.getItem('portfolio_app_version');
   if (savedVer !== APP_VERSION) {
     localStorage.setItem('portfolio_app_version', APP_VERSION);
@@ -195,6 +195,15 @@ function loadData() {
 
   // DATA_VERSION comes from data.js; if it changed (新交易加入), reload defaults
   if (savedVersion !== String(DATA_VERSION) || !savedTransactions) {
+    // Preserve manually-entered bank balances & pledge amount across data reloads
+    let keepBanks = null;
+    let keepPledge = null;
+    try {
+      const sb = localStorage.getItem("portfolio_bank_balances");
+      if (sb) keepBanks = JSON.parse(sb);
+      const sp = localStorage.getItem("portfolio_pledge_amount");
+      if (sp !== null && sp !== "") keepPledge = parseFloat(sp) || 0;
+    } catch (e) { /* ignore, use defaults */ }
     transactions = [...INITIAL_TRANSACTIONS];
     prices = { ...DEFAULT_PRICES };
     loanConfig = {
@@ -204,8 +213,10 @@ function loadData() {
       deductionDay: 2
     };
     bankBalances = {};
-    BANKS.forEach(b => { bankBalances[b] = 0; });
-    pledgeAmount = 0;
+    BANKS.forEach(b => {
+      bankBalances[b] = (keepBanks && typeof keepBanks[b] === 'number' && !isNaN(keepBanks[b])) ? keepBanks[b] : 0;
+    });
+    pledgeAmount = (keepPledge !== null) ? keepPledge : 0;
     saveTransactionsToLocalStorage();
     savePricesToLocalStorage();
     saveLoanConfigToLocalStorage();

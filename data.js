@@ -1,5 +1,5 @@
 // Pre-populated transactions transcribed from the transaction statement
-const DATA_VERSION = 4; // 遞增此版本號會觸發重新載入預設交易
+const DATA_VERSION = 5; // 遞增此版本號會觸發重新載入預設交易
 const INITIAL_TRANSACTIONS = [
   // Page 1
   { date: "115/03/02", type: "buy", name: "元大台灣50", shares: 2000, price: 80.58, fee: 0, tax: 0, amount: 161160, net: 161160, dir: "收", ref: "p-005T-00" },
@@ -70,5 +70,11 @@ const INITIAL_TRANSACTIONS = [
   { date: "115/09/07", type: "buy", name: "元大台灣50", shares: 9, price: 109.73, fee: 1, tax: 0, amount: 987, net: 988, dir: "收", ref: "p0072" },
   { date: "115/09/07", type: "buy", name: "富邦台50", shares: 3, price: 251.48, fee: 1, tax: 0, amount: 754, net: 755, dir: "收", ref: "p00Gn" },
   { date: "115/09/07", type: "buy", name: "元大S&P500", shares: 13, price: 76.84, fee: 1, tax: 0, amount: 998, net: 999, dir: "收", ref: "p00HM" },
-  { date: "115/09/07", type: "buy", name: "富邦NASDAQ", shares: 8, price: 120.09, fee: 1, tax: 0, amount: 960, net: 961, dir: "收", ref: "p00Hx" }
+  { date: "115/09/07", type: "buy", name: "富邦NASDAQ", shares: 8, price: 120.09, fee: 1, tax: 0, amount: 960, net: 961, dir: "收", ref: "p00Hx" },
+
+  // Page 7 – 2026/10/05 定期定額
+  { date: "115/10/05", type: "buy", name: "元大台灣50", shares: 8, price: 115.92, fee: 1, tax: 0, amount: 927, net: 928, dir: "收", ref: "" },
+  { date: "115/10/05", type: "buy", name: "富邦台50", shares: 3, price: 265.41, fee: 1, tax: 0, amount: 796, net: 797, dir: "收", ref: "" },
+  { date: "115/10/05", type: "buy", name: "元大S&P500", shares: 12, price: 77.32, fee: 1, tax: 0, amount: 927, net: 928, dir: "收", ref: "" },
+  { date: "115/10/05", type: "buy", name: "富邦NASDAQ", shares: 7, price: 126.14, fee: 1, tax: 0, amount: 882, net: 883, dir: "收", ref: "" }
 ];
