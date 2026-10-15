@@ -1,24 +1,24 @@
 {
-  "updatedAt": "2026-10-15T17:27:42.046Z",
+  "updatedAt": "2026-10-15T20:39:50.443Z",
   "prices": {
     "元大台灣50": 108.9,
     "富邦台50": 250.1,
     "元大S&P500": 78.15,
     "富邦NASDAQ": 123.25,
     "元大台灣50正2": 37.14,
-    "Palantir": 199.04,
-    "Invesco QQQ": 298.295,
-    "Tesla": 360.05,
-    "Vanguard VTI": 377.55,
-    "Vanguard VXUS": 83.555,
-    "Nvidia": 217.175,
-    "Vanguard VOO": 708.1,
-    "永豐 TLT": 80.095,
-    "永豐 VTI": 377.55,
-    "永豐 VXUS": 83.555,
-    "國泰 DRAM": 48.455,
-    "國泰 QQQ": 724.42,
-    "國泰 VXUS": 83.555
+    "Palantir": 200.5,
+    "Invesco QQQ": 299.79,
+    "Tesla": 362.44,
+    "Vanguard VTI": 378.42,
+    "Vanguard VXUS": 83.84,
+    "Nvidia": 217.23,
+    "Vanguard VOO": 709.43,
+    "永豐 TLT": 79.97,
+    "永豐 VTI": 378.42,
+    "永豐 VXUS": 83.84,
+    "國泰 DRAM": 49.33,
+    "國泰 QQQ": 728,
+    "國泰 VXUS": 83.84
   },
   "fxRate": 31.695
 }
