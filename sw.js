@@ -1,14 +1,14 @@
-/* GlintPortfolio - Service Worker */
+﻿/* GlintPortfolio - Service Worker */
 
-const CACHE_VERSION = 'v31';
+const CACHE_VERSION = 'v33';
 const CACHE_NAME = `glint-portfolio-${CACHE_VERSION}`;
 
 const PRECACHE_ASSETS = [
   './',
   './index.html',
-  './styles.css?v=31',
-  './app.js?v=31',
-  './data.js?v=31',
+  './styles.css?v=33',
+  './app.js?v=33',
+  './data.js?v=33',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -60,7 +60,7 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
-  // API proxy route: /proxy/<encoded-url> — SW fetches target (no CORS), returns to page
+  // API proxy route: /proxy/<encoded-url> ??SW fetches target (no CORS), returns to page
   if (url.pathname.startsWith('/proxy/')) {
     const target = decodeURIComponent(url.pathname.slice(7));
     event.respondWith(
