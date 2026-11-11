@@ -273,6 +273,12 @@ header {
   margin-bottom: 30px;
 }
 
+/* Let wide tables scroll inside their column instead of stretching the grid */
+.main-layout > *,
+.main-layout > * > * {
+  min-width: 0;
+}
+
 @media (max-width: 1024px) {
   .main-layout {
     grid-template-columns: 1fr;
@@ -394,6 +400,7 @@ header {
 /* Standard Table Styling */
 .table-container {
   overflow-x: auto;
+  max-width: 100%;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   background: var(--bg-card);
